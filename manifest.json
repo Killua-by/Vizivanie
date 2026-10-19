@@ -1,0 +1,10 @@
+{
+  "name": "Выживание: Зомби",
+  "short_name": "Зомби",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#0a0e14",
+  "theme_color": "#0a0e14",
+  "icons": []
+}
