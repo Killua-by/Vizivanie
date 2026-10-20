@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0a0e14">
+<meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="manifest" href="manifest.json">
-<title>Выживание: Зомби</title>
+<title>Морской Волк: Индустриализация</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
     width: 100%; height: 100%; overflow: hidden;
-    background: #0a0e14;
+    background: #0f172a;
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    color: #e6edf3;
+    color: #f8fafc;
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: none;
@@ -21,83 +21,192 @@
   }
   canvas { display: block; position: absolute; top: 0; left: 0; touch-action: none; }
 
-  #pauseBtn {
-    position: absolute; top: 12px; right: 12px;
-    width: 46px; height: 46px;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 13px;
-    background: rgba(255,255,255,0.08);
-    color: #e6edf3; font-size: 20px; line-height: 1;
-    z-index: 5; cursor: pointer;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+  #uiLayer {
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 10px;
   }
-  #pauseBtn:active { background: rgba(255,255,255,0.18); }
+
+  .top-panel { display: flex; justify-content: space-between; align-items: flex-start; }
+  
+  #bossBarContainer {
+    position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+    width: 85%; max-width: 400px; display: none; flex-direction: column; align-items: center;
+  }
+  .boss-name { font-size: 16px; font-weight: 900; color: #ef4444; letter-spacing: 2px; text-shadow: 0 2px 4px #000; margin-bottom: 4px; }
+  .boss-bar-bg { width: 100%; height: 16px; background: rgba(0,0,0,0.8); border: 2px solid #7f1d1d; border-radius: 8px; overflow: hidden; }
+  .boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171); transition: width 0.1s; }
+
+  .stats-container {
+    display: flex; flex-direction: column; gap: 5px;
+    background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 10px 14px; backdrop-filter: blur(8px); width: 150px;
+  }
+  .bar-bg { width: 100%; height: 10px; background: rgba(0,0,0,0.6); border-radius: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; width: 100%; transition: width 0.2s; border-radius: 5px; }
+  .hp-fill { background: linear-gradient(90deg, #dc2626, #f87171); }
+  .hunger-fill { background: linear-gradient(90deg, #d97706, #fbbf24); }
+  .thirst-fill { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+
+  .resources {
+    background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px; padding: 10px 14px; backdrop-filter: blur(8px);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 15px;
+    font-weight: 800; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  .res-wood { color: #fbbf24; } .res-metal { color: #cbd5e1; } .res-plastic { color: #38bdf8; } .res-fabric { color: #d8b4fe; }
+  .res-copper { color: #f97316; } .res-iron { color: #94a3b8; } .res-coal { color: #1e293b; } .res-gold { color: #fbbf24; } .res-diamond { color: #67e8f9; }
+  .res-core { color: #a855f7; font-size: 16px; grid-column: span 2; text-align: center; }
+
+  #pauseBtn {
+    width: 48px; height: 48px; border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 14px; background: rgba(15, 23, 42, 0.8);
+    color: #f8fafc; font-size: 20px; pointer-events: auto;
+    backdrop-filter: blur(8px); position: absolute; top: 12px; right: 12px;
+  }
+
+  .inventory {
+    pointer-events: auto; background: rgba(15, 23, 42, 0.8);
+    border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 8px 14px;
+    margin-top: 10px; display: flex; gap: 15px; font-size: 14px; font-weight: 800; backdrop-filter: blur(8px);
+  }
+
+  .bottom-panel { display: flex; justify-content: flex-end; align-items: flex-end; }
+  
+  .actions {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+    pointer-events: auto; width: 100%; max-width: 300px; margin-left: auto;
+  }
+
+  .action-btn {
+    width: 100%; aspect-ratio: 1; border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.2); background: rgba(30, 41, 59, 0.9);
+    color: white; font-size: 24px; display: flex; justify-content: center; align-items: center;
+    backdrop-filter: blur(8px); transition: transform 0.1s, background 0.2s;
+  }
+  .action-btn:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
+  .action-btn:disabled { opacity: 0.4; filter: grayscale(1); }
+  
+  .action-btn.upgrade-btn {
+    grid-column: span 4; width: 100%; aspect-ratio: auto; height: 50px;
+    font-size: 14px; font-weight: 900; border-radius: 12px;
+    background: linear-gradient(135deg, #10b981, #047857); flex-direction: column; gap: 2px;
+  }
+  .action-btn.upgrade-btn .cost { font-size: 11px; font-weight: 600; opacity: 0.9; }
+  .action-btn.craft-btn { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+  
+  #interactBtn {
+    display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%);
+    padding: 15px 30px; border-radius: 30px; border: 2px solid #38bdf8;
+    background: rgba(15, 23, 42, 0.9); color: #38bdf8; font-weight: 900; font-size: 16px;
+    pointer-events: auto; box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+    backdrop-filter: blur(4px); white-space: nowrap;
+  }
+  #interactBtn:active { background: rgba(56, 189, 248, 0.2); }
+
+  /* Уведомления */
+  #toast {
+    position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+    background: rgba(168, 85, 247, 0.9); color: white; padding: 10px 20px;
+    border-radius: 20px; font-weight: 800; font-size: 14px; pointer-events: none;
+    opacity: 0; transition: opacity 0.3s; z-index: 20; text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  }
 
   #overlay {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    background: rgba(4, 8, 16, 0.88);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    z-index: 10; padding: 20px;
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(4, 8, 16, 0.92); backdrop-filter: blur(10px);
+    z-index: 10; padding: 20px; text-align: center; overflow-y: auto;
   }
   #overlay.hidden { display: none; }
-  #overlayContent { text-align: center; max-width: 460px; width: 100%; }
-
-  .title {
-    font-size: 34px; font-weight: 800; letter-spacing: 3px;
-    margin-bottom: 8px;
-    background: linear-gradient(135deg, #ef4444, #f97316);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .title.blue {
-    background: linear-gradient(135deg, #60a5fa, #2563eb);
-    -webkit-background-clip: text; background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-  .subtitle { font-size: 14px; color: #9ca3af; margin-bottom: 22px; }
-
+  .modal { max-width: 420px; width: 100%; padding: 15px; }
+  
+  .title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin-bottom: 15px; color: #38bdf8; }
+  .title.red { color: #ef4444; }
+  .title.purple { color: #a855f7; }
+  .subtitle { font-size: 15px; color: #94a3b8; margin-bottom: 25px; line-height: 1.6; }
+  
   .btn {
-    display: block; width: 100%; padding: 16px 20px; margin: 10px 0;
-    border: none; border-radius: 15px;
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    color: #fff; font-size: 17px; font-weight: 700;
-    font-family: inherit; letter-spacing: 0.5px; cursor: pointer;
-    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
-    transition: transform 0.08s ease;
+    width: 100%; padding: 16px; border: none; border-radius: 14px;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #0f172a; font-size: 17px; font-weight: 800;
+    margin-bottom: 12px;
   }
-  .btn:active { transform: scale(0.965); }
-
-  .btn.upgrade {
-    background: linear-gradient(135deg, #15803d, #14532d);
-    box-shadow: 0 6px 20px rgba(21, 128, 61, 0.35);
-    text-align: left; padding: 15px 18px;
+  .btn:active { background: #0ea5e9; transform: scale(0.98); }
+  .btn-gray { background: linear-gradient(135deg, #475569, #334155); color: white; }
+  
+  .craft-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
+  .craft-item {
+    background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 14px; padding: 15px; text-align: left;
   }
-  .btn.upgrade .t { display: block; font-size: 16px; margin-bottom: 3px; }
-  .btn.upgrade .d { display: block; font-size: 12.5px; font-weight: 400; opacity: 0.8; }
-
-  .btn.gray {
-    background: linear-gradient(135deg, #4b5563, #374151);
-    box-shadow: none;
+  .craft-item .craft-title { font-weight: 900; font-size: 16px; margin-bottom: 6px; display: flex; justify-content: space-between;}
+  .craft-item .craft-desc { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4; }
+  .craft-item .craft-cost { font-size: 13px; font-weight: 800; margin-bottom: 10px; color: #fbbf24; }
+  .craft-item .craft-cost span { margin-right: 12px; }
+  .craft-item .craft-btn {
+    width: 100%; padding: 12px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; font-weight: 800; font-size: 15px;
   }
-
-  .hint { margin-top: 18px; font-size: 13px; color: #6b7280; line-height: 2; }
-
-  .stats {
-    display: flex; justify-content: space-around; margin: 18px 0 24px;
-    background: rgba(255,255,255,0.05); border-radius: 14px; padding: 16px 8px;
-  }
-  .stats div { display: flex; flex-direction: column; gap: 4px; }
-  .stats span { font-size: 11px; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
-  .stats b { font-size: 22px; color: #f3f4f6; }
+  .craft-item .craft-btn:disabled { background: #475569; opacity: 0.6; }
+  
+  .hint { font-size: 13px; color: #64748b; margin-top: 15px; line-height: 2; text-align: left; padding-left: 10px; }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
-<button id="pauseBtn" aria-label="Пауза">⏸</button>
-<div id="overlay" class="hidden"><div id="overlayContent"></div></div>
+
+<div id="uiLayer">
+  <div class="top-panel">
+    <div>
+      <div class="stats-container">
+        <div class="bar-bg"><div class="bar-fill hp-fill" id="hpBar"></div></div>
+        <div class="bar-bg"><div class="bar-fill hunger-fill" id="hungerBar"></div></div>
+        <div class="bar-bg"><div class="bar-fill thirst-fill" id="thirstBar"></div></div>
+      </div>
+      <div class="inventory">
+        <span>🐟 <span id="invFish">0</span></span>
+        <span>💧 <span id="invWater">0</span></span>
+        <span>🥩 <span id="invMeat">0</span></span>
+      </div>
+    </div>
+    <div class="resources">
+      <div class="res-row"><span class="res-wood">🪵</span> <span id="uiWood">0</span></div>
+      <div class="res-row"><span class="res-metal">⚙️</span> <span id="uiMetal">0</span></div>
+      <div class="res-row"><span class="res-plastic">🧴</span> <span id="uiPlastic">0</span></div>
+      <div class="res-row"><span class="res-fabric">🧵</span> <span id="uiFabric">0</span></div>
+      <div class="res-row"><span class="res-copper">🟠</span> <span id="uiCopper">0</span></div>
+      <div class="res-row"><span class="res-iron">⛓️</span> <span id="uiIron">0</span></div>
+      <div class="res-row"><span class="res-coal">⚫</span> <span id="uiCoal">0</span></div>
+      <div class="res-row" id="goldRow" style="display:none;"><span class="res-gold">🟡</span> <span id="uiGold">0</span></div>
+      <div class="res-row" id="diamondRow" style="display:none;"><span class="res-diamond">💎</span> <span id="uiDiamond">0</span></div>
+      <div class="res-row res-core" id="coreRow" style="display:none;">🔮 <span id="uiCore">0</span></div>
+    </div>
+  </div>
+  
+  <div id="bossBarContainer">
+    <div class="boss-name">🦈 МЕГАЛОДОН 🦈</div>
+    <div class="boss-bar-bg"><div class="boss-bar-fill" id="bossHpBar"></div></div>
+  </div>
+
+  <button id="pauseBtn">⏸</button>
+  <button id="interactBtn">ДЕЙСТВИЕ</button>
+  <div id="toast"></div>
+
+  <div class="bottom-panel">
+    <div class="actions">
+      <button class="action-btn upgrade-btn" id="upgradeBtn">
+        <span>УЛУЧШИТЬ СУДНО</span>
+        <span class="cost" id="uiCost">🪵 40 | ⚙️ 10</span>
+      </button>
+      <button class="action-btn" id="fishBtn">🎣</button>
+      <button class="action-btn" id="purifyBtn">💧</button>
+      <button class="action-btn" id="plantBtn">🌱</button>
+      <button class="action-btn craft-btn" id="craftBtn">🛠️</button>
+    </div>
+  </div>
+</div>
+
+<div id="overlay"><div class="modal" id="overlayContent"></div></div>
 
 <script>
 "use strict";
@@ -106,98 +215,102 @@ const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const overlayContent = document.getElementById('overlayContent');
-const pauseBtn = document.getElementById('pauseBtn');
+const toastEl = document.getElementById('toast');
+
+const uiWood = document.getElementById('uiWood'); const uiMetal = document.getElementById('uiMetal');
+const uiPlastic = document.getElementById('uiPlastic'); const uiFabric = document.getElementById('uiFabric');
+const uiCopper = document.getElementById('uiCopper'); const uiIron = document.getElementById('uiIron');
+const uiCoal = document.getElementById('uiCoal'); const uiGold = document.getElementById('uiGold');
+const uiDiamond = document.getElementById('uiDiamond'); const uiCore = document.getElementById('uiCore');
+const coreRow = document.getElementById('coreRow'); const goldRow = document.getElementById('goldRow'); const diamondRow = document.getElementById('diamondRow');
+const uiCost = document.getElementById('uiCost'); const upgradeBtn = document.getElementById('upgradeBtn');
+const fishBtn = document.getElementById('fishBtn'); const purifyBtn = document.getElementById('purifyBtn');
+const plantBtn = document.getElementById('plantBtn'); const craftBtn = document.getElementById('craftBtn');
+const pauseBtn = document.getElementById('pauseBtn'); const interactBtn = document.getElementById('interactBtn');
+
+const bossBarContainer = document.getElementById('bossBarContainer'); const bossHpBar = document.getElementById('bossHpBar');
+const invFish = document.getElementById('invFish'); const invWater = document.getElementById('invWater'); const invMeat = document.getElementById('invMeat');
+const hpBar = document.getElementById('hpBar'); const hungerBar = document.getElementById('hungerBar'); const thirstBar = document.getElementById('thirstBar');
 
 let W = 0, H = 0, DPR = 1;
-
 function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth;
-  H = window.innerHeight;
-  canvas.width = Math.floor(W * DPR);
-  canvas.height = Math.floor(H * DPR);
-  canvas.style.width = W + 'px';
-  canvas.style.height = H + 'px';
+  W = window.innerWidth; H = window.innerHeight;
+  canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
+  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
-window.addEventListener('resize', resize);
-resize();
+window.addEventListener('resize', resize); resize();
 
 let actx = null;
 function initAudio() {
-  if (!actx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (AC) actx = new AC();
-  }
+  if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
   if (actx && actx.state === 'suspended') actx.resume();
 }
-function beep(freq, dur, type = 'square', vol = 0.04) {
+function beep(freq, dur, type = 'sine', vol = 0.05) {
   if (!actx || actx.state !== 'running') return;
-  const o = actx.createOscillator();
-  const g = actx.createGain();
-  o.type = type;
-  o.frequency.value = freq;
+  const o = actx.createOscillator(); const g = actx.createGain();
+  o.type = type; o.frequency.value = freq;
   g.gain.setValueAtTime(vol, actx.currentTime);
   g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
-  o.connect(g); g.connect(actx.destination);
-  o.start(); o.stop(actx.currentTime + dur);
+  o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
 }
 
+/* ================= СОСТОЯНИЕ ================= */
 const game = {
-  state: 'menu',
-  player: null,
-  zombies: [],
-  bullets: [],
-  particles: [],
-  pickups: [],
-  wave: 0,
-  score: 0,
-  kills: 0,
-  time: 0,
-  spawnQueue: [],
-  spawnTimer: 0,
-  waveActive: false,
+  state: 'menu', wood: 0, metal: 0, plastic: 0, fabric: 0, copper: 0, iron: 0, coal: 0, gold: 0, diamond: 0, core: 0,
+  boatLevel: 1, isNight: false, zone: 'ocean', caveDepth: 1,
+  blueprints: { gen: false, drill: false },
+  camera: { x: 0, y: 0, zoom: 1, targetZoom: 1 }, time: 0, toastTimer: 0
 };
 
-const ZOMBIE_TYPES = {
-  normal: { hp: 30,  speed: 48, r: 13, dps: 11, color: '#5d8a4a', score: 10 },
-  fast:   { hp: 18,  speed: 98, r: 10, dps: 15, color: '#b8493a', score: 15 },
-  tank:   { hp: 150, speed: 30, r: 21, dps: 22, color: '#7d5aa0', score: 35 },
+const player = {
+  x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI/2, wakeTimer: 0,
+  hp: 100, maxHp: 100, hunger: 100, maxHunger: 100, thirst: 100, maxThirst: 100,
+  isOnFoot: false, interactMode: 'none' 
 };
 
-let shake = 0;
-let currentUpgrades = [];
+const inventory = { fish: 0, water: 0, seeds: 0, crops: 0, meat: 0 };
+const tools = { rod: 1, farm: 1, purifier: 1, turret: 0 };
 
-function createPlayer() {
-  return {
-    x: W / 2, y: H / 2,
-    r: 14,
-    hp: 100, maxHp: 100,
-    speed: 185,
-    angle: -Math.PI / 2,
-    fireRate: 4.5,
-    damage: 11,
-    bulletSpeed: 620,
-    pierce: 0,
-    shootCooldown: 0,
-    hurtFlash: 0,
-  };
-}
+let fishing = { state: 'idle', timer: 0 };
+let purifyTimer = 0; let crops = [];
+let megalodon = null; let harpoons = []; let bossWarningTimer = 0;
 
+const BOAT_LEVELS = [
+  { name: "Плот", speed: 130, size: 18, costW: 0, costM: 0 },
+  { name: "Лодка", speed: 160, size: 24, costW: 40, costM: 10 },
+  { name: "Катер", speed: 200, size: 32, costW: 120, costM: 50 },
+  { name: "Яхта", speed: 240, size: 45, costW: 300, costM: 150 },
+  { name: "Мега-Яхта", speed: 280, size: 65, costW: 800, costM: 400 }
+];
+
+let resources = []; let particles = []; let sharks = [];
+let buildings = []; let mobs = []; let caveOres = [];
+let island = { x: 2000, y: 2000, r: 900 };
+let caveEntrance = { x: 2000, y: 1400 }; 
+let boatDock = { x: 2000, y: 2800 }; 
+let elevator = { x: 0, y: -300, r: 40 }; // Лифт в пещере
+
+let spawnTimer = 0; let sharkTimer = 0; let shake = 0;
 const joystick = { active: false, id: null, bx: 0, by: 0, dx: 0, dy: 0 };
-const JOY_MAX = 62;
+const JOY_MAX = 55;
 const keys = { w: false, a: false, s: false, d: false };
+
+function showToast(text, color = '#a855f7') {
+  toastEl.textContent = text; toastEl.style.background = color; toastEl.style.opacity = 1;
+  game.toastTimer = 3;
+}
 
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
+  if (fishing.state === 'biting') {
+    inventory.fish++; fishing.state = 'idle'; beep(1200, 0.15, 'sine'); updateUI();
+    for(let i=0; i<10; i++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*200, vy: (Math.random()-0.5)*200, life: 0.5, maxLife: 0.5, size: 4, color: '#38bdf8' });
+    return;
+  }
   for (const t of e.changedTouches) {
-    if (!joystick.active) {
-      joystick.active = true;
-      joystick.id = t.identifier;
-      joystick.bx = t.clientX;
-      joystick.by = t.clientY;
-      joystick.dx = 0; joystick.dy = 0;
-    }
+    if (!joystick.active) { joystick.active = true; joystick.id = t.identifier; joystick.bx = t.clientX; joystick.by = t.clientY; joystick.dx = 0; joystick.dy = 0; }
   }
 }, { passive: false });
 
@@ -205,12 +318,10 @@ canvas.addEventListener('touchmove', e => {
   e.preventDefault();
   for (const t of e.changedTouches) {
     if (t.identifier === joystick.id) {
-      let dx = t.clientX - joystick.bx;
-      let dy = t.clientY - joystick.by;
+      let dx = t.clientX - joystick.bx; let dy = t.clientY - joystick.by;
       const d = Math.hypot(dx, dy);
-      if (d > JOY_MAX) { dx = dx / d * JOY_MAX; dy = dy / d * JOY_MAX; }
-      joystick.dx = dx / JOY_MAX;
-      joystick.dy = dy / JOY_MAX;
+      if (d > JOY_MAX) { dx = dx/d * JOY_MAX; dy = dy/d * JOY_MAX; }
+      joystick.dx = dx / JOY_MAX; joystick.dy = dy / JOY_MAX;
     }
   }
 }, { passive: false });
@@ -218,687 +329,629 @@ canvas.addEventListener('touchmove', e => {
 function endTouch(e) {
   e.preventDefault();
   for (const t of e.changedTouches) {
-    if (t.identifier === joystick.id) {
-      joystick.active = false;
-      joystick.id = null;
-      joystick.dx = 0; joystick.dy = 0;
-    }
+    if (t.identifier === joystick.id) { joystick.active = false; joystick.id = null; joystick.dx = 0; joystick.dy = 0; }
   }
 }
 canvas.addEventListener('touchend', endTouch, { passive: false });
 canvas.addEventListener('touchcancel', endTouch, { passive: false });
+window.addEventListener('keydown', e => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
+window.addEventListener('keyup', e => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
 
-window.addEventListener('keydown', e => {
-  const k = e.key.toLowerCase();
-  if (k in keys) keys[k] = true;
-  if (k === 'escape') togglePause();
-});
-window.addEventListener('keyup', e => {
-  const k = e.key.toLowerCase();
-  if (k in keys) keys[k] = false;
-});
-
-function roundRect(x, y, w, h, r) {
-  if (w <= 0 || h <= 0) return;
-  r = Math.min(r, w / 2, h / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function nearestZombie(x, y) {
-  let best = null, bestD = Infinity;
-  for (const z of game.zombies) {
-    const dx = z.x - x, dy = z.y - y;
-    const d = dx * dx + dy * dy;
-    if (d < bestD) { bestD = d; best = z; }
-  }
-  return best;
-}
-
-function spawnBlood(x, y, count = 6, spread = 1) {
-  for (let i = 0; i < count; i++) {
-    if (game.particles.length > 320) break;
-    const a = Math.random() * Math.PI * 2;
-    const s = (40 + Math.random() * 130) * spread;
-    game.particles.push({
-      x, y,
-      vx: Math.cos(a) * s,
-      vy: Math.sin(a) * s,
-      life: 0.35 + Math.random() * 0.45,
-      maxLife: 0.8,
-      size: 2 + Math.random() * 3,
-      color: `hsl(${348 + Math.random() * 16}, 82%, ${32 + Math.random() * 22}%)`,
-    });
-  }
-}
-
-function spawnMuzzle(x, y, angle) {
-  for (let i = 0; i < 4; i++) {
-    if (game.particles.length > 320) break;
-    const a = angle + (Math.random() - 0.5) * 0.9;
-    const s = 90 + Math.random() * 140;
-    game.particles.push({
-      x, y,
-      vx: Math.cos(a) * s,
-      vy: Math.sin(a) * s,
-      life: 0.12 + Math.random() * 0.1,
-      maxLife: 0.25,
-      size: 2 + Math.random() * 2.5,
-      color: '#ffd166',
-    });
-  }
-}
-
-function startWave(n) {
-  game.wave = n;
-  game.spawnQueue = [];
-  game.spawnTimer = 0;
-  game.waveActive = true;
-
-  const count = Math.floor(5 + n * 2.4);
-  for (let i = 0; i < count; i++) {
-    const r = Math.random();
-    let type = 'normal';
-    if (n >= 2 && r < 0.30) type = 'fast';
-    if (n >= 3 && r < 0.12) type = 'tank';
-    game.spawnQueue.push(type);
-  }
+function startGame() {
+  initAudio();
+  game.wood = 0; game.metal = 0; game.plastic = 0; game.fabric = 0;
+  game.copper = 0; game.iron = 0; game.coal = 0; game.gold = 0; game.diamond = 0; game.core = 0;
+  game.boatLevel = 1; game.isNight = false; game.zone = 'ocean'; game.caveDepth = 1;
+  game.blueprints = { gen: false, drill: false };
+  tools.rod = 1; tools.farm = 1; tools.purifier = 1; tools.turret = 0;
+  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0; player.isOnFoot = false;
+  player.hp = 100; player.hunger = 100; player.thirst = 100;
+  inventory.fish = 0; inventory.water = 0; inventory.seeds = 0; inventory.crops = 0; inventory.meat = 0;
+  crops = []; megalodon = null; harpoons = []; buildings = []; mobs = []; caveOres = [];
+  game.camera.x = 0; game.camera.y = 0; game.camera.zoom = 1; game.camera.targetZoom = 1;
+  resources = []; particles = []; sharks = [];
+  fishing.state = 'idle'; purifyTimer = 0; bossWarningTimer = 0; shake = 0;
+  bossBarContainer.style.display = 'none'; coreRow.style.display = 'none';
+  goldRow.style.display = 'none'; diamondRow.style.display = 'none';
   game.state = 'playing';
+  overlay.classList.add('hidden');
+  updateUI(); spawnResources(15);
 }
 
-function spawnZombie(type) {
-  const cfg = ZOMBIE_TYPES[type];
-  const side = Math.floor(Math.random() * 4);
-  const m = 70;
-  let x, y;
-  if (side === 0)      { x = Math.random() * W; y = -m; }
-  else if (side === 1) { x = W + m; y = Math.random() * H; }
-  else if (side === 2) { x = Math.random() * W; y = H + m; }
-  else                 { x = -m; y = Math.random() * H; }
+function updateUI() {
+  uiWood.textContent = game.wood; uiMetal.textContent = game.metal;
+  uiPlastic.textContent = game.plastic; uiFabric.textContent = game.fabric;
+  uiCopper.textContent = game.copper; uiIron.textContent = game.iron; uiCoal.textContent = game.coal; 
+  uiGold.textContent = game.gold; uiDiamond.textContent = game.diamond; uiCore.textContent = game.core;
+  invFish.textContent = inventory.fish; invWater.textContent = inventory.water; invMeat.textContent = inventory.meat;
 
-  const hpScale = 1 + (game.wave - 1) * 0.17;
-  const spScale = 1 + (game.wave - 1) * 0.035;
-  const hp = Math.round(cfg.hp * hpScale);
+  if (game.core > 0) coreRow.style.display = 'flex';
+  if (game.gold > 0) goldRow.style.display = 'flex';
+  if (game.diamond > 0) diamondRow.style.display = 'flex';
 
-  game.zombies.push({
-    x, y, type,
-    r: cfg.r,
-    hp, maxHp: hp,
-    speed: cfg.speed * spScale,
-    dps: cfg.dps,
-    color: cfg.color,
-    score: cfg.score,
-    angle: 0,
-    hitFlash: 0,
+  hpBar.style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
+  hungerBar.style.width = Math.max(0, (player.hunger / player.maxHunger) * 100) + '%';
+  thirstBar.style.width = Math.max(0, (player.thirst / player.maxThirst) * 100) + '%';
+
+  if (game.boatLevel < BOAT_LEVELS.length && !player.isOnFoot) {
+    const next = BOAT_LEVELS[game.boatLevel];
+    uiCost.textContent = `🪵 ${next.costW} | ⚙️ ${next.costM}`;
+    upgradeBtn.disabled = !(game.wood >= next.costW && game.metal >= next.costM);
+    upgradeBtn.style.display = 'flex';
+  } else { upgradeBtn.style.display = 'none'; }
+
+  fishBtn.disabled = fishing.state !== 'idle' || player.isOnFoot;
+  purifyBtn.disabled = purifyTimer > 0 || player.isOnFoot;
+  plantBtn.disabled = !(inventory.seeds > 0 && game.boatLevel >= 2) || player.isOnFoot;
+  
+  if (megalodon) {
+    bossBarContainer.style.display = 'flex';
+    bossHpBar.style.width = Math.max(0, (megalodon.hp / megalodon.maxHp) * 100) + '%';
+  } else { bossBarContainer.style.display = 'none'; }
+
+  // Кнопка взаимодействия
+  if (player.interactMode !== 'none') {
+    interactBtn.style.display = 'block';
+    if (player.interactMode === 'island') interactBtn.textContent = '🏝️ ВЫСАДИТЬСЯ';
+    if (player.interactMode === 'boat') interactBtn.textContent = '⚓ СЕСТЬ В ЛОДКУ';
+    if (player.interactMode === 'cave') interactBtn.textContent = '🕳️ ВОЙТИ В ПЕЩЕРУ';
+    if (player.interactMode === 'exitCave') interactBtn.textContent = '☀️ ВЫЙТИ ИЗ ПЕЩЕРЫ';
+    if (player.interactMode === 'elevator') interactBtn.textContent = `🛗 СПУСТИТЬСЯ НА УР. ${game.caveDepth + 1}`;
+  } else {
+    interactBtn.style.display = 'none';
+  }
+}
+
+function upgradeBoat() {
+  if (game.boatLevel >= BOAT_LEVELS.length || player.isOnFoot) return;
+  const next = BOAT_LEVELS[game.boatLevel];
+  if (game.wood >= next.costW && game.metal >= next.costM) {
+    game.wood -= next.costW; game.metal -= next.costM;
+    game.boatLevel++;
+    game.camera.targetZoom = Math.max(0.5, 1 - (game.boatLevel * 0.1));
+    beep(400, 0.1, 'square', 0.08);
+    for(let i=0; i<30; i++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*200, vy: (Math.random()-0.5)*200, life: 1, maxLife: 1, size: Math.random()*4+2, color: '#fbbf24' });
+    
+    if (game.boatLevel === 5 && !game.isNight) {
+      game.isNight = true; bossWarningTimer = 5;
+      beep(200, 1.0, 'sawtooth', 0.1); setTimeout(() => beep(150, 1.5, 'sawtooth', 0.1), 500);
+    }
+    updateUI();
+  }
+}
+
+function spawnMegalodon() {
+  const angle = Math.random() * Math.PI * 2;
+  megalodon = {
+    x: player.x + Math.cos(angle) * 600, y: player.y + Math.sin(angle) * 600,
+    hp: 3000, maxHp: 3000, speed: 80, angle: angle + Math.PI,
+    state: 'circling', stateTimer: 3, r: 60, hitFlash: 0
+  };
+  updateUI();
+}
+
+function spawnResources(n) {
+  for (let i = 0; i < n; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 300 + Math.random() * 500;
+    const r = Math.random();
+    let type = 'wood';
+    if (r > 0.4 && r <= 0.6) type = 'plastic';
+    else if (r > 0.6 && r <= 0.75) type = 'metal';
+    else if (r > 0.75 && r <= 0.85) type = 'fabric';
+    else if (r > 0.85) type = 'seed';
+
+    resources.push({
+      x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist,
+      type: type, r: type === 'metal' ? 14 : 16, rotation: Math.random() * Math.PI, rotSpeed: (Math.random() - 0.5) * 2
+    });
+  }
+}
+
+function spawnShark() {
+  if (game.boatLevel < 2 || game.isNight || player.isOnFoot) return;
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 600;
+  sharks.push({
+    x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist,
+    speed: 100 + (game.boatLevel * 10), angle: angle + Math.PI, biteCooldown: 0
   });
 }
 
-function waveComplete() {
-  game.waveActive = false;
-  const p = game.player;
-  p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.12);
-  beep(880, 0.12, 'sine', 0.06);
-  setTimeout(() => beep(1180, 0.18, 'sine', 0.06), 110);
-  showUpgrades();
+function generateCaveOres(depth) {
+  caveOres = []; // Очищаем старые
+  for(let i=0; i<15; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 100 + Math.random() * 600;
+    let type = 'copper';
+    if (depth === 1) type = Math.random() > 0.3 ? 'coal' : 'copper';
+    else if (depth === 2) type = Math.random() > 0.4 ? 'iron' : 'gold';
+    else if (depth === 3) type = Math.random() > 0.6 ? 'diamond' : 'gold';
+    
+    caveOres.push({ x: Math.cos(angle)*dist, y: Math.sin(angle)*dist, type: type, hp: 3 });
+  }
 }
 
-const UPGRADES = [
-  { name: '💥 Урон',            desc: '+25% к урону пуль',            apply: p => { p.damage *= 1.25; } },
-  { name: '⚡ Скорострельность', desc: '+20% к скорости стрельбы',     apply: p => { p.fireRate *= 1.2; } },
-  { name: '❤️ Здоровье',        desc: '+30 к макс. HP и полное лечение', apply: p => { p.maxHp += 30; p.hp = p.maxHp; } },
-  { name: '👟 Скорость',        desc: '+15% к скорости передвижения', apply: p => { p.speed *= 1.15; } },
-  { name: '🎯 Пробивание',      desc: 'Пули пробивают +1 врага',      apply: p => { p.pierce += 1; } },
-  { name: '🚀 Скорость пуль',   desc: '+30% к скорости полёта пуль',  apply: p => { p.bulletSpeed *= 1.3; } },
-  { name: '🩹 Аптечка',         desc: 'Восстановить 60 HP',           apply: p => { p.hp = Math.min(p.maxHp, p.hp + 60); },
-    cond: p => p.hp < p.maxHp * 0.9 },
+function update(dt) {
+  if (game.state !== 'playing') return;
+  game.time += dt;
+  if (shake > 0) shake = Math.max(0, shake - dt * 60);
+  if (game.toastTimer > 0) { game.toastTimer -= dt; if (game.toastTimer <= 0) toastEl.style.opacity = 0; }
+
+  if (bossWarningTimer > 0) {
+    bossWarningTimer -= dt;
+    if (bossWarningTimer <= 0 && !megalodon) spawnMegalodon();
+  }
+
+  player.hunger -= 0.3 * dt; player.thirst -= 0.5 * dt;
+  if (player.hunger <= 0 || player.thirst <= 0) player.hp -= 3 * dt;
+
+  if (player.hunger < 50 && inventory.meat > 0) { inventory.meat--; player.hunger += 50; updateUI(); beep(600, 0.1, 'sine'); }
+  else if (player.hunger < 50 && inventory.fish > 0) { inventory.fish--; player.hunger += 30; updateUI(); beep(600, 0.1, 'sine'); }
+  if (player.thirst < 50 && inventory.water > 0) { inventory.water--; player.thirst += 40; updateUI(); beep(800, 0.1, 'sine'); }
+
+  player.hunger = Math.max(0, Math.min(100, player.hunger));
+  player.thirst = Math.max(0, Math.min(100, player.thirst));
+  player.hp = Math.max(0, Math.min(100, player.hp));
+
+  if (player.hp <= 0) {
+    game.state = 'gameover';
+    beep(150, 0.5, 'sawtooth', 0.1);
+    overlayContent.innerHTML = `<h1 class="title red">ТЫ ПОГИБ</h1><p class="subtitle">Твоя история оборвалась...</p><button class="btn" onclick="startGame()">▶ ЗАНОВО</button>`;
+    overlay.classList.remove('hidden');
+    return;
+  }
+
+  // --- Зоны и Взаимодействия ---
+  if (game.zone === 'ocean' && !player.isOnFoot) {
+    const distToIsland = Math.hypot(player.x - island.x, player.y - island.y);
+    if (distToIsland < island.r + 50) player.interactMode = 'island';
+    else player.interactMode = 'none';
+  } else if (game.zone === 'island' && player.isOnFoot) {
+    const distToCave = Math.hypot(player.x - caveEntrance.x, player.y - caveEntrance.y);
+    const distToBoat = Math.hypot(player.x - boatDock.x, player.y - boatDock.y);
+    if (distToCave < 100) player.interactMode = 'cave';
+    else if (distToBoat < 150) player.interactMode = 'boat';
+    else player.interactMode = 'none';
+  } else if (game.zone === 'cave') {
+    const distToElevator = Math.hypot(player.x - elevator.x, player.y - elevator.y);
+    if (distToElevator < 80 && game.caveDepth < 3) player.interactMode = 'elevator';
+    else if (Math.hypot(player.x, player.y) < 100) player.interactMode = 'exitCave'; // Условный выход
+    else player.interactMode = 'none';
+  }
+
+  // --- Движение ---
+  const level = BOAT_LEVELS[game.boatLevel - 1];
+  let speed = player.isOnFoot ? 150 : level.speed;
+
+  let mx = 0, my = 0;
+  if (joystick.active) { mx = joystick.dx; my = joystick.dy; }
+  if (keys.w) my -= 1; if (keys.s) my += 1; if (keys.a) mx -= 1; if (keys.d) mx += 1;
+
+  const mag = Math.hypot(mx, my);
+  if (mag > 1) { mx /= mag; my /= mag; }
+  if (mag > 0.1) { player.vx += mx * speed * 3 * dt; player.vy += my * speed * 3 * dt; player.angle = Math.atan2(my, mx); }
+  
+  player.vx *= 0.9; player.vy *= 0.9;
+  const pSpeed = Math.hypot(player.vx, player.vy);
+  if (pSpeed > speed) { player.vx = (player.vx / pSpeed) * speed; player.vy = (player.vy / pSpeed) * speed; }
+  
+  player.x += player.vx * dt; player.y += player.vy * dt;
+  game.camera.x = player.x; game.camera.y = player.y;
+
+  // --- Логика по зонам ---
+  if (game.zone === 'ocean') {
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) { spawnTimer = 1.5; if (resources.length < 30) spawnResources(2); }
+    if (!game.isNight) {
+      sharkTimer -= dt;
+      if (sharkTimer <= 0) { sharkTimer = 10; if (sharks.length < 2 && !player.isOnFoot) spawnShark(); }
+    }
+  } else if (game.zone === 'island') {
+    if (mobs.length < 5 && Math.random() < dt * 0.5) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 300 + Math.random() * 200;
+      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'boar', hp: 30, speed: 60 });
+    }
+  } else if (game.zone === 'cave') {
+    // В пещере мобы спавнятся в зависимости от глубины
+    const spawnRate = 0.5 + (game.caveDepth * 0.5);
+    if (mobs.length < 8 + game.caveDepth*2 && Math.random() < dt * spawnRate) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 400 + Math.random() * 200;
+      const hp = 15 + (game.caveDepth * 10);
+      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'bat', hp: hp, speed: 100 + game.caveDepth*20 });
+    }
+
+    // Добыча руды
+    for (let i = caveOres.length - 1; i >= 0; i--) {
+      const ore = caveOres[i];
+      if (Math.hypot(player.x - ore.x, player.y - ore.y) < 40) {
+        ore.hp -= dt * 2; 
+        if (Math.random() < dt * 10) beep(300, 0.05, 'square', 0.02);
+        if (ore.hp <= 0) {
+          if (ore.type === 'copper') game.copper += 5;
+          if (ore.type === 'coal') game.coal += 5;
+          if (ore.type === 'iron') game.iron += 4;
+          if (ore.type === 'gold') game.gold += 3;
+          if (ore.type === 'diamond') game.diamond += 1;
+          
+          // Шанс найти чертеж бура на 1 глубине
+          if (game.caveDepth === 1 && !game.blueprints.drill && Math.random() < 0.2) {
+            game.blueprints.drill = true;
+            showToast('📜 НАЙДЕН ЧЕРТЕЖ: Электробур!', '#fbbf24');
+          }
+          
+          caveOres.splice(i, 1); updateUI();
+          beep(800, 0.1, 'sine');
+        }
+      }
+    }
+  }
+
+  // Мобы
+  for (let i = mobs.length - 1; i >= 0; i--) {
+    const m = mobs[i];
+    const dx = player.x - m.x; const dy = player.y - m.y; const dist = Math.hypot(dx, dy);
+    if (dist < 500) {
+      m.x += (dx/dist) * m.speed * dt; m.y += (dy/dist) * m.speed * dt;
+      if (dist < 30) {
+        player.hp -= (m.type === 'boar' ? 20 : 10 + game.caveDepth*5) * dt;
+        shake = Math.min(10, shake + dt * 20);
+      }
+    }
+    if (dist > 800) mobs.splice(i, 1);
+  }
+
+  // Электричество и постройки (с заправкой углем)
+  for (const b of buildings) {
+    if (b.type === 'drill') {
+      let isPowered = false;
+      for (const gen of buildings) {
+        if (gen.type === 'gen' && Math.hypot(b.x - gen.x, b.y - gen.y) < 250) { isPowered = true; break; }
+      }
+      if (isPowered) {
+        if (b.fuel > 0) {
+          b.timer -= dt;
+          if (b.timer <= 0) {
+            b.timer = 4; b.fuel--;
+            const r = Math.random();
+            if (r < 0.3) game.copper += 2;
+            else if (r < 0.6) game.iron += 2;
+            else if (r < 0.8) game.gold += 1;
+            else game.diamond += 1;
+            updateUI(); beep(400, 0.05, 'sine', 0.02);
+          }
+        } else {
+          // Заправка углем (автоматически)
+          if (game.coal > 0) {
+            game.coal -= 1; b.fuel = 5; updateUI(); beep(300, 0.1, 'triangle');
+          } else {
+            b.timer = 2; // Пауза, если нет угля
+          }
+        }
+      }
+    }
+  }
+
+  updateUI();
+}
+
+/* ================= КРАФТ И СТРОИТЕЛЬСТВО ================= */
+const CRAFT_RECIPES = [
+  { id: 'rod', name: '🎣 Удочка', maxLvl: 3, desc: 'Ускоряет клев.', costs: [ {w:30, f:10, p:5}, {w:80, f:30, m:20, p:15} ] },
+  { id: 'farm', name: '🌱 Грядка', maxLvl: 3, desc: 'Ускоряет рост урожая.', costs: [ {w:40, p:20}, {w:100, p:50, m:20} ] },
+  { id: 'purifier', name: '💧 Опреснитель', maxLvl: 3, desc: 'Ускоряет очистку воды.', costs: [ {m:20, p:15}, {m:60, p:50, f:20} ] },
+  { id: 'turret', name: '🎯 Гарпунная Турель', maxLvl: 3, desc: 'Стреляет по боссу.', costs: [ {m:100, p:50, f:30}, {m:300, p:150, f:100} ] },
 ];
 
-function pickUpgrades(n) {
-  const p = game.player;
-  const pool = UPGRADES.filter(u => !u.cond || u.cond(p));
-  const res = [];
-  const copy = pool.slice();
-  while (res.length < n && copy.length) {
-    const i = Math.floor(Math.random() * copy.length);
-    res.push(copy.splice(i, 1)[0]);
+const BUILD_RECIPES = [
+  { id: 'gen', name: '⚡ Генератор', desc: 'Дает энергию. Требует Чертеж.', costs: [{core: 1, iron: 20, copper: 30}], reqBp: 'gen' },
+  { id: 'drill', name: '⛏️ Электробур', desc: 'Копает руду (жрет уголь). Требует Чертеж.', costs: [{iron: 15, copper: 15, m: 20}], reqBp: 'drill' },
+];
+
+function openCraftMenu() {
+  game.state = 'paused';
+  let html = `<h1 class="title" style="color:#8b5cf6">🛠️ ВЕРСТАК</h1><p class="subtitle">Крафт и механизмы</p><div class="craft-list">`;
+  
+  CRAFT_RECIPES.forEach(r => {
+    const lvl = tools[r.id]; const isMax = lvl >= r.maxLvl; const cost = isMax ? null : r.costs[lvl - 1];
+    let canAfford = false;
+    if (!isMax) canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
+    html += `<div class="craft-item"><div class="craft-title"><span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span></div><div class="craft-desc">${r.desc}</div>`;
+    if (!isMax) {
+      html += `<div class="craft-cost">Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}</div>
+      <button class="craft-btn" onclick="doCraft('${r.id}')" ${canAfford ? '' : 'disabled'}>УЛУЧШИТЬ</button>`;
+    } else { html += `<div class="craft-cost" style="color:#22c55e">МАКС. УРОВЕНЬ</div>`; }
+    html += `</div>`;
+  });
+
+  if (game.core > 0) {
+    html += `<h2 style="color:#a855f7; margin-top:15px; margin-bottom:10px;">⚡ ИНДУСТРИЯ</h2>`;
+    BUILD_RECIPES.forEach(r => {
+      const hasBp = game.blueprints[r.reqBp];
+      let canAfford = (game.core >= (r.costs[0].core||0)) && (game.iron >= (r.costs[0].iron||0)) && (game.copper >= (r.costs[0].copper||0)) && (game.metal >= (r.costs[0].m||0));
+      
+      html += `<div class="craft-item" style="opacity: ${hasBp ? 1 : 0.6}">
+        <div class="craft-title"><span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}</div>
+        <div class="craft-desc">${r.desc}</div>
+        <div class="craft-cost">Стоимость: ${r.costs[0].core ? `🔮${r.costs[0].core} ` : ''}${r.costs[0].iron ? `⛓️${r.costs[0].iron} ` : ''}${r.costs[0].copper ? `🟠${r.costs[0].copper} ` : ''}${r.costs[0].m ? `⚙️${r.costs[0].m}` : ''}</div>
+        <button class="craft-btn" onclick="buildItem('${r.id}')" ${(canAfford && hasBp) ? '' : 'disabled'}>ПОСТРОИТЬ</button></div>`;
+    });
   }
-  return res;
+
+  html += `</div><button class="btn btn-gray" onclick="closeCraftMenu()">ЗАКРЫТЬ</button>`;
+  overlayContent.innerHTML = html; overlay.classList.remove('hidden');
 }
 
-function showOverlay(html) {
-  overlayContent.innerHTML = html;
-  overlay.classList.remove('hidden');
+window.doCraft = function(id) {
+  const recipe = CRAFT_RECIPES.find(r => r.id === id); const lvl = tools[id];
+  if (lvl >= recipe.maxLvl) return;
+  const cost = recipe.costs[lvl - 1];
+  if ((game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0))) {
+    game.wood -= (cost.w||0); game.metal -= (cost.m||0); game.plastic -= (cost.p||0); game.fabric -= (cost.f||0);
+    tools[id]++; beep(600, 0.1, 'square', 0.08); openCraftMenu(); updateUI();
+  }
+};
+
+window.buildItem = function(id) {
+  const recipe = BUILD_RECIPES.find(r => r.id === id);
+  if (!game.blueprints[recipe.reqBp]) return;
+  const c = recipe.costs[0];
+  if ((game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0))) {
+    if (game.core > 0) game.core -= (c.core||0);
+    game.iron -= (c.iron||0); game.copper -= (c.copper||0); game.metal -= (c.m||0);
+    
+    const bx = player.x + Math.cos(player.angle) * 60;
+    const by = player.y + Math.sin(player.angle) * 60;
+    
+    let fuel = id === 'drill' ? 0 : undefined; // Бур создается пустым
+    buildings.push({ x: bx, y: by, type: id, timer: 0, fuel: fuel });
+    
+    beep(500, 0.2, 'sine', 0.1); openCraftMenu(); updateUI();
+  }
+};
+
+window.closeCraftMenu = function() { game.state = 'playing'; overlay.classList.add('hidden'); };
+
+/* ================= ОБРАБОТЧИКИ КНОПОК ================= */
+interactBtn.addEventListener('click', () => {
+  if (player.interactMode === 'island') {
+    player.isOnFoot = true; player.x = boatDock.x; player.y = boatDock.y;
+    game.zone = 'island'; beep(300, 0.2, 'sine');
+  } else if (player.interactMode === 'boat') {
+    player.isOnFoot = false; game.zone = 'ocean'; beep(400, 0.2, 'sine');
+  } else if (player.interactMode === 'cave') {
+    game.zone = 'cave'; game.caveDepth = 1; player.x = 0; player.y = 100;
+    generateCaveOres(1); beep(150, 0.5, 'sawtooth');
+  } else if (player.interactMode === 'elevator') {
+    game.caveDepth++; generateCaveOres(game.caveDepth);
+    player.x = 0; player.y = 100;
+    beep(200, 0.5, 'sawtooth'); showToast(`Спуск на глубину ${game.caveDepth}`, '#38bdf8');
+  } else if (player.interactMode === 'exitCave') {
+    game.zone = 'island'; player.x = caveEntrance.x; player.y = caveEntrance.y + 50;
+    beep(300, 0.2, 'sine');
+  }
+});
+
+upgradeBtn.addEventListener('click', upgradeBoat);
+craftBtn.addEventListener('click', openCraftMenu);
+fishBtn.addEventListener('click', () => { if (fishing.state === 'idle' && !player.isOnFoot) { fishing.state = 'casting'; fishing.timer = 0.5; beep(300, 0.1, 'sine'); updateUI(); } });
+purifyBtn.addEventListener('click', () => { if (purifyTimer <= 0 && !player.isOnFoot) { purifyTimer = Math.max(1, 4.5 - tools.purifier); beep(500, 0.1, 'sawtooth'); updateUI(); } });
+plantBtn.addEventListener('click', () => { if (inventory.seeds > 0 && game.boatLevel >= 2 && !player.isOnFoot) { inventory.seeds--; crops.push({ progress: 0 }); beep(400, 0.1, 'triangle'); updateUI(); } });
+pauseBtn.addEventListener('click', () => {
+  if (game.state === 'playing') {
+    game.state = 'paused';
+    overlayContent.innerHTML = `<h1 class="title">ПАУЗА</h1><button class="btn" id="resumeBtn">▶ ПРОДОЛЖИТЬ</button><button class="btn btn-gray" id="menuBtn">В МЕНЮ</button>`;
+    overlay.classList.remove('hidden');
+    document.getElementById('resumeBtn').addEventListener('click', () => { game.state = 'playing'; overlay.classList.add('hidden'); });
+    document.getElementById('menuBtn').addEventListener('click', showMenu);
+  }
+});
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+/* ================= ОТРИСОВКА ================= */
+function drawOcean() {
+  let bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  if (game.isNight) { bgGrad.addColorStop(0, '#020617'); bgGrad.addColorStop(1, '#0f172a'); } 
+  else { bgGrad.addColorStop(0, '#0f172a'); bgGrad.addColorStop(1, '#0c4a6e'); }
+  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
+  
+  const gridSize = 120; const offsetX = (game.camera.x * game.camera.zoom) % gridSize; const offsetY = (game.camera.y * game.camera.zoom) % gridSize;
+  ctx.lineWidth = 2;
+  for(let layer = 0; layer < 2; layer++) {
+    ctx.strokeStyle = game.isNight ? `rgba(56, 189, 248, ${0.05 - layer*0.02})` : `rgba(255, 255, 255, ${0.1 - layer*0.04})`;
+    ctx.beginPath();
+    const speed = layer === 0 ? 1 : -1.5; const spacing = gridSize + layer * 30;
+    for (let x = -spacing; x < W + spacing; x += spacing) {
+      ctx.moveTo(x - offsetX * speed, 0);
+      for (let y = 0; y < H; y += 20) ctx.lineTo(x - offsetX * speed + Math.sin(y*0.02 + game.time*1.5)*15, y);
+    }
+    for (let y = -spacing; y < H + spacing; y += spacing) {
+      ctx.moveTo(0, y - offsetY * speed);
+      for (let x = 0; x < W; x += 20) ctx.lineTo(x, y - offsetY * speed + Math.cos(x*0.02 + game.time*1.5)*15);
+    }
+    ctx.stroke();
+  }
 }
-function hideOverlay() {
-  overlay.classList.add('hidden');
+
+function drawIsland() {
+  ctx.fillStyle = '#fcd34d'; ctx.beginPath(); ctx.arc(island.x, island.y, island.r, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(island.x, island.y, island.r * 0.85, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#16a34a';
+  for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(island.x + Math.cos(i)*300, island.y + Math.sin(i)*300, 40, 0, Math.PI*2); ctx.fill(); }
+  
+  ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(caveEntrance.x, caveEntrance.y, 50, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(caveEntrance.x, caveEntrance.y, 30, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🕳️', caveEntrance.x, caveEntrance.y+7);
+  
+  ctx.fillStyle = '#78350f'; ctx.fillRect(boatDock.x - 50, boatDock.y - 20, 100, 40);
+  ctx.strokeStyle = '#451a03'; ctx.lineWidth = 2; ctx.strokeRect(boatDock.x - 50, boatDock.y - 20, 100, 40);
+}
+
+function draw() {
+  if (game.zone === 'ocean' || game.zone === 'island') drawOcean();
+  else if (game.zone === 'cave') { ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, W, H); }
+
+  if (game.state === 'menu') return;
+
+  ctx.save();
+  if (shake > 0.3) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+  ctx.translate(W/2, H/2); ctx.scale(game.camera.zoom, game.camera.zoom); ctx.translate(-game.camera.x, -game.camera.y);
+
+  if (game.isNight && game.zone === 'ocean') {
+    const lightGrad = ctx.createRadialGradient(player.x, player.y, 80, player.x, player.y, 350);
+    lightGrad.addColorStop(0, 'rgba(15, 23, 42, 0)'); lightGrad.addColorStop(1, 'rgba(2, 6, 23, 0.9)');
+    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 450, 0, Math.PI*2); ctx.fill();
+  } else if (game.zone === 'cave') {
+    const darkness = Math.min(0.98, 0.85 + game.caveDepth * 0.05);
+    const lightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 200);
+    lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
+    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 300, 0, Math.PI*2); ctx.fill();
+  }
+
+  if (game.zone === 'island' || game.zone === 'ocean') drawIsland();
+
+  // Пещера и Лифт
+  if (game.zone === 'cave') {
+    // Лифт
+    if (game.caveDepth < 3) {
+      ctx.fillStyle = '#475569'; ctx.fillRect(elevator.x - 30, elevator.y - 30, 60, 60);
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3; ctx.strokeRect(elevator.x - 30, elevator.y - 30, 60, 60);
+      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🛗', elevator.x, elevator.y + 10);
+    }
+    
+    // Выход
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, -150, 40, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('🚪', 0, -142);
+
+    for (const ore of caveOres) {
+      ctx.save(); ctx.translate(ore.x, ore.y);
+      ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
+      
+      if (ore.type === 'copper') ctx.fillStyle = '#f97316';
+      else if (ore.type === 'iron') ctx.fillStyle = '#94a3b8';
+      else if (ore.type === 'coal') ctx.fillStyle = '#0f172a';
+      else if (ore.type === 'gold') ctx.fillStyle = '#fbbf24';
+      else if (ore.type === 'diamond') ctx.fillStyle = '#67e8f9';
+      
+      ctx.beginPath(); ctx.arc(-5, -5, 8, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(8, 5, 6, 0, Math.PI*2); ctx.fill();
+      if (ore.hp < 3) { ctx.fillStyle = '#ef4444'; ctx.fillRect(-15, -30, 30 * (ore.hp/3), 4); }
+      ctx.restore();
+    }
+  }
+
+  // Постройки
+  for (const b of buildings) {
+    ctx.save(); ctx.translate(b.x, b.y);
+    if (b.type === 'gen') {
+      ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
+      ctx.strokeStyle = '#d8b4fe'; ctx.lineWidth = 4; ctx.stroke();
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign='center'; ctx.fillText('⚡', 0, 8);
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 250, 0, Math.PI*2); ctx.stroke();
+    } else if (b.type === 'drill') {
+      ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.roundRect(-25, -25, 50, 50, 8); ctx.fill();
+      ctx.strokeStyle = b.fuel > 0 ? '#22c55e' : '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(15,10); ctx.lineTo(-15,10); ctx.fill();
+      // Индикатор топлива
+      if (b.fuel > 0) { ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px sans-serif'; ctx.fillText(b.fuel, 0, 35); }
+    }
+    ctx.restore();
+  }
+
+  // Мобы
+  for (const m of mobs) {
+    ctx.save(); ctx.translate(m.x, m.y);
+    if (m.type === 'boar') {
+      ctx.fillStyle = '#78350f'; ctx.beginPath(); ctx.ellipse(0, 0, 25, 15, 0, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#451a03'; ctx.beginPath(); ctx.arc(20, 0, 10, 0, Math.PI*2); ctx.fill();
+    } else if (m.type === 'bat') {
+      ctx.fillStyle = '#475569'; const wing = Math.sin(game.time * 20) * 10;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-25, -10 + wing); ctx.lineTo(-15, 0); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(25, -10 + wing); ctx.lineTo(15, 0); ctx.fill();
+      ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // Мегалодон, ресурсы (только для океана)
+  if (game.zone === 'ocean') {
+    if (megalodon) {
+      ctx.save(); ctx.translate(megalodon.x, megalodon.y); ctx.rotate(megalodon.angle);
+      ctx.fillStyle = megalodon.hitFlash > 0 ? '#fff' : (megalodon.state === 'stunned' ? '#64748b' : '#1e293b');
+      ctx.beginPath(); ctx.moveTo(megalodon.r*1.5, 0); ctx.quadraticCurveTo(megalodon.r*0.5, -megalodon.r*1.2, -megalodon.r, -megalodon.r*0.8);
+      ctx.lineTo(-megalodon.r*0.5, 0); ctx.lineTo(-megalodon.r, megalodon.r*0.8); ctx.quadraticCurveTo(megalodon.r*0.5, megalodon.r*1.2, megalodon.r*1.5, 0); ctx.fill();
+      ctx.restore();
+    }
+    for (const res of resources) {
+      ctx.save(); ctx.translate(res.x, res.y); ctx.rotate(res.rotation);
+      if (res.type === 'wood') { ctx.fillStyle = '#78350f'; ctx.fillRect(-res.r, -res.r*0.5, res.r*2, res.r); }
+      else if (res.type === 'metal') { ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.arc(0, 0, res.r, 0, Math.PI*2); ctx.fill(); }
+      else if (res.type === 'plastic') { ctx.fillStyle = '#0ea5e9'; ctx.fillRect(-res.r*0.5, -res.r, res.r, res.r*2); }
+      else if (res.type === 'fabric') { ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(0, 0, res.r*0.8, 0, Math.PI*2); ctx.fill(); }
+      else if (res.type === 'seed') { ctx.fillStyle = '#10b981'; ctx.beginPath(); ctx.arc(0, 0, res.r*0.7, 0, Math.PI*2); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+
+  // Игрок
+  if (!player.isOnFoot) {
+    const level = BOAT_LEVELS[game.boatLevel - 1];
+    ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle + Math.PI/2);
+    ctx.fillStyle = level.color; ctx.beginPath(); ctx.moveTo(0, -level.size * 1.6);
+    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
+    ctx.lineTo(-level.size*0.8, level.size*1.2); ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6); ctx.fill();
+    if (tools.turret > 0) { ctx.fillStyle = '#ef4444'; ctx.fillRect(-5, -level.size*0.8, 10, 20); }
+    ctx.restore();
+  } else {
+    ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(0, 5, 15, 8, 0, 0, Math.PI*2); ctx.fill(); 
+    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill(); 
+    ctx.strokeStyle = '#bae6fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+  }
+
+  for (const pt of particles) {
+    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife); ctx.fillStyle = pt.color;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  if (joystick.active) {
+    ctx.save(); ctx.globalAlpha = 0.2;
+    ctx.beginPath(); ctx.arc(joystick.bx, joystick.by, JOY_MAX, 0, Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.arc(joystick.bx + joystick.dx*JOY_MAX, joystick.by + joystick.dy*JOY_MAX, 22, 0, Math.PI*2); ctx.fillStyle = '#38bdf8'; ctx.fill();
+    ctx.restore();
+  }
+}
+
+let lastTime = performance.now();
+function loop(now) {
+  let dt = (now - lastTime) / 1000; lastTime = now; if (dt > 0.05) dt = 0.05;
+  update(dt); draw(); requestAnimationFrame(loop);
 }
 
 function showMenu() {
   game.state = 'menu';
-  game.player = null;
-  game.zombies = [];
-  game.bullets = [];
-  game.particles = [];
-  game.pickups = [];
-  showOverlay(`
-    <h1 class="title">ВЫЖИВАНИЕ</h1>
-    <p class="subtitle">Зомби наступают. Продержись как можно дольше.</p>
-    <button class="btn" onclick="startGame()">▶ ИГРАТЬ</button>
+  overlayContent.innerHTML = `
+    <h1 class="title">МОРСКОЙ ВОЛК</h1>
+    <p class="subtitle">Выживи, победи Мегалодона, найди Остров и построй свою империю с электричеством!</p>
+    <button class="btn" id="playBtn">▶ НАЧАТЬ</button>
     <div class="hint">
-      <p>🕹️ Води пальцем по экрану — движение</p>
-      <p>🎯 Стрельба ведётся автоматически</p>
-      <p>⬆️ После каждой волны выбирай улучшение</p>
-    </div>
-  `);
+      <p>🕹️ Двигайся джойстиком</p>
+      <p>🏝️ Найди остров (плыви вправо-вниз)</p>
+      <p>⚡ Убей босса ради чертежа Генератора</p>
+      <p>🕳️ Исследуй пещеры и спускайся на лифте</p>
+      <p>⛏️ Найди чертеж Бура в пещере и заправляй его углем!</p>
+    </div>`;
+  overlay.classList.remove('hidden');
+  document.getElementById('playBtn').addEventListener('click', startGame);
 }
 
-function showUpgrades() {
-  game.state = 'upgrade';
-  currentUpgrades = pickUpgrades(3);
-  let html = `
-    <h2 class="title blue" style="font-size:26px">ВОЛНА ${game.wave} ПРОЙДЕНА</h2>
-    <p class="subtitle">Выбери улучшение</p>`;
-  currentUpgrades.forEach((u, i) => {
-    html += `<button class="btn upgrade" onclick="chooseUpgrade(${i})">
-      <span class="t">${u.name}</span>
-      <span class="d">${u.desc}</span>
-    </button>`;
-  });
-  showOverlay(html);
-}
-
-function showGameOver() {
-  game.state = 'gameover';
-  beep(140, 0.5, 'sawtooth', 0.09);
-  showOverlay(`
-    <h1 class="title">ТЫ ПАЛ</h1>
-    <p class="subtitle">Зомби добрались до тебя...</p>
-    <div class="stats">
-      <div><span>Волна</span><b>${game.wave}</b></div>
-      <div><span>Убито</span><b>${game.kills}</b></div>
-      <div><span>Очки</span><b>${game.score}</b></div>
-    </div>
-    <button class="btn" onclick="startGame()">↻ ЗАНОВО</button>
-  `);
-}
-
-function togglePause() {
-  if (game.state === 'playing') {
-    game.state = 'paused';
-    joystick.active = false; joystick.dx = 0; joystick.dy = 0;
-    showOverlay(`
-      <h1 class="title blue">ПАУЗА</h1>
-      <p class="subtitle">Волна ${game.wave}</p>
-      <button class="btn" onclick="resumeGame()">▶ ПРОДОЛЖИТЬ</button>
-      <button class="btn gray" onclick="showMenu()">В МЕНЮ</button>
-    `);
-  } else if (game.state === 'paused') {
-    resumeGame();
-  }
-}
-
-window.startGame = function () {
-  initAudio();
-  game.player = createPlayer();
-  game.zombies = [];
-  game.bullets = [];
-  game.particles = [];
-  game.pickups = [];
-  game.score = 0;
-  game.kills = 0;
-  game.time = 0;
-  shake = 0;
-  hideOverlay();
-  startWave(1);
-  beep(520, 0.1, 'square', 0.05);
-};
-
-window.resumeGame = function () {
-  hideOverlay();
-  game.state = 'playing';
-  joystick.active = false; joystick.dx = 0; joystick.dy = 0;
-};
-
-window.chooseUpgrade = function (i) {
-  const u = currentUpgrades[i];
-  if (u) u.apply(game.player);
-  beep(700, 0.1, 'sine', 0.06);
-  hideOverlay();
-  startWave(game.wave + 1);
-};
-
-window.showMenu = showMenu;
-
-pauseBtn.addEventListener('click', e => {
-  e.preventDefault();
-  togglePause();
-});
-
-function update(dt) {
-  if (shake > 0) shake = Math.max(0, shake - dt * 60);
-  if (game.state !== 'playing') return;
-
-  const p = game.player;
-  game.time += dt;
-
-  let mx = 0, my = 0;
-  if (joystick.active) { mx = joystick.dx; my = joystick.dy; }
-  if (keys.w) my -= 1;
-  if (keys.s) my += 1;
-  if (keys.a) mx -= 1;
-  if (keys.d) mx += 1;
-
-  const mag = Math.hypot(mx, my);
-  if (mag > 1) { mx /= mag; my /= mag; }
-  if (mag > 0.02) {
-    p.x += mx * p.speed * dt;
-    p.y += my * p.speed * dt;
-  }
-  p.x = Math.max(p.r, Math.min(W - p.r, p.x));
-  p.y = Math.max(p.r, Math.min(H - p.r, p.y));
-
-  const target = nearestZombie(p.x, p.y);
-  if (target) p.angle = Math.atan2(target.y - p.y, target.x - p.x);
-
-  p.shootCooldown -= dt;
-  if (target && p.shootCooldown <= 0) {
-    p.shootCooldown = 1 / p.fireRate;
-    const a = p.angle + (Math.random() - 0.5) * 0.07;
-    const bx = p.x + Math.cos(a) * (p.r + 8);
-    const by = p.y + Math.sin(a) * (p.r + 8);
-    game.bullets.push({
-      x: bx, y: by,
-      vx: Math.cos(a) * p.bulletSpeed,
-      vy: Math.sin(a) * p.bulletSpeed,
-      r: 4, dmg: p.damage,
-      pierce: p.pierce, hits: [],
-    });
-    spawnMuzzle(bx, by, a);
-    beep(240 + Math.random() * 40, 0.045, 'square', 0.022);
-  }
-
-  if (game.spawnQueue.length > 0) {
-    game.spawnTimer -= dt;
-    if (game.spawnTimer <= 0) {
-      const interval = Math.max(0.28, 0.9 - game.wave * 0.03);
-      game.spawnTimer = interval;
-      const type = game.spawnQueue.shift();
-      if (game.zombies.length < 90) spawnZombie(type);
-    }
-  }
-
-  for (let i = game.bullets.length - 1; i >= 0; i--) {
-    const b = game.bullets[i];
-    b.x += b.vx * dt;
-    b.y += b.vy * dt;
-
-    if (b.x < -30 || b.x > W + 30 || b.y < -30 || b.y > H + 30) {
-      game.bullets.splice(i, 1);
-      continue;
-    }
-
-    let removed = false;
-    for (const z of game.zombies) {
-      if (z.hp <= 0) continue;
-      if (b.hits.indexOf(z) !== -1) continue;
-      const dx = z.x - b.x, dy = z.y - b.y;
-      if (dx * dx + dy * dy < (z.r + b.r) * (z.r + b.r)) {
-        z.hp -= b.dmg;
-        z.hitFlash = 0.12;
-        b.hits.push(z);
-        spawnBlood(b.x, b.y, 4, 0.7);
-        beep(150, 0.035, 'sawtooth', 0.022);
-        if (b.pierce > 0) {
-          b.pierce--;
-          b.dmg *= 0.85;
-        } else {
-          game.bullets.splice(i, 1);
-          removed = true;
-        }
-        break;
-      }
-    }
-    if (removed) continue;
-  }
-
-  for (const z of game.zombies) {
-    if (z.hitFlash > 0) z.hitFlash -= dt;
-    const dx = p.x - z.x, dy = p.y - z.y;
-    const d = Math.hypot(dx, dy) || 1;
-    z.x += (dx / d) * z.speed * dt;
-    z.y += (dy / d) * z.speed * dt;
-    z.angle = Math.atan2(dy, dx);
-  }
-
-  const zs = game.zombies;
-  for (let i = 0; i < zs.length; i++) {
-    const a = zs[i];
-    for (let j = i + 1; j < zs.length; j++) {
-      const b = zs[j];
-      const dx = b.x - a.x, dy = b.y - a.y;
-      const minD = a.r + b.r;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < minD * minD && d2 > 0.01) {
-        const d = Math.sqrt(d2);
-        const push = (minD - d) * 0.5;
-        const nx = dx / d, ny = dy / d;
-        a.x -= nx * push; a.y -= ny * push;
-        b.x += nx * push; b.y += ny * push;
-      }
-    }
-  }
-
-  let touching = false;
-  for (const z of game.zombies) {
-    const dx = p.x - z.x, dy = p.y - z.y;
-    const d = Math.hypot(dx, dy);
-    if (d < z.r + p.r) {
-      p.hp -= z.dps * dt;
-      touching = true;
-    }
-  }
-  if (touching) {
-    p.hurtFlash = Math.min(1, p.hurtFlash + dt * 4);
-    shake = Math.min(12, shake + dt * 45);
-    if (Math.random() < dt * 3) beep(70, 0.09, 'sawtooth', 0.05);
-  } else {
-    p.hurtFlash = Math.max(0, p.hurtFlash - dt * 2);
-  }
-
-  for (let i = game.zombies.length - 1; i >= 0; i--) {
-    const z = game.zombies[i];
-    if (z.hp <= 0) {
-      game.zombies.splice(i, 1);
-      game.kills++;
-      game.score += Math.round(z.score * (1 + game.wave * 0.1));
-      spawnBlood(z.x, z.y, 14, 1.3);
-      beep(95, 0.12, 'sawtooth', 0.045);
-      if (Math.random() < 0.075) {
-        game.pickups.push({ x: z.x, y: z.y, r: 12, life: 22 });
-      }
-    }
-  }
-
-  for (let i = game.pickups.length - 1; i >= 0; i--) {
-    const pk = game.pickups[i];
-    pk.life -= dt;
-    if (pk.life <= 0) { game.pickups.splice(i, 1); continue; }
-    const dx = p.x - pk.x, dy = p.y - pk.y;
-    if (dx * dx + dy * dy < (p.r + pk.r + 6) * (p.r + pk.r + 6)) {
-      p.hp = Math.min(p.maxHp, p.hp + 30);
-      game.pickups.splice(i, 1);
-      beep(880, 0.1, 'sine', 0.07);
-      beep(1180, 0.1, 'sine', 0.05);
-    }
-  }
-
-  for (let i = game.particles.length - 1; i >= 0; i--) {
-    const pt = game.particles[i];
-    pt.x += pt.vx * dt;
-    pt.y += pt.vy * dt;
-    pt.vx *= 0.92;
-    pt.vy *= 0.92;
-    pt.life -= dt;
-    if (pt.life <= 0) game.particles.splice(i, 1);
-  }
-
-  if (p.hp <= 0) {
-    p.hp = 0;
-    spawnBlood(p.x, p.y, 30, 1.6);
-    showGameOver();
-    return;
-  }
-
-  if (game.waveActive && game.spawnQueue.length === 0 && game.zombies.length === 0) {
-    waveComplete();
-  }
-}
-
-function drawPlayer(p) {
-  ctx.save();
-  ctx.translate(p.x, p.y);
-
-  ctx.beginPath();
-  ctx.ellipse(0, p.r * 0.75, p.r * 0.95, p.r * 0.45, 0, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(0, 0, p.r, 0, Math.PI * 2);
-  const grad = ctx.createRadialGradient(-p.r * 0.3, -p.r * 0.3, 2, 0, 0, p.r);
-  grad.addColorStop(0, '#93c5fd');
-  grad.addColorStop(1, '#2563eb');
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.strokeStyle = '#bfdbfe';
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
-
-  ctx.rotate(p.angle);
-  ctx.fillStyle = '#1e293b';
-  roundRect(p.r * 0.35, -4.5, p.r * 1.15, 9, 3);
-  ctx.fill();
-  ctx.fillStyle = '#475569';
-  roundRect(p.r * 1.3, -3, 6, 6, 2);
-  ctx.fill();
-
-  ctx.restore();
-
-  if (p.hurtFlash > 0) {
-    ctx.save();
-    ctx.globalAlpha = p.hurtFlash * 0.5;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r + 8, 0, Math.PI * 2);
-    ctx.fillStyle = '#ef4444';
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-function drawZombie(z) {
-  ctx.save();
-  ctx.translate(z.x, z.y);
-
-  ctx.beginPath();
-  ctx.ellipse(0, z.r * 0.72, z.r * 0.9, z.r * 0.4, 0, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(0, 0, z.r, 0, Math.PI * 2);
-  ctx.fillStyle = z.hitFlash > 0 ? '#ffffff' : z.color;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  ctx.rotate(z.angle);
-  ctx.fillStyle = '#1a0a0a';
-  ctx.beginPath();
-  ctx.arc(z.r * 0.32, -z.r * 0.36, z.r * 0.17, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(z.r * 0.32, z.r * 0.36, z.r * 0.17, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.restore();
-
-  if (z.hp < z.maxHp) {
-    const w = z.r * 2;
-    const x = z.x - z.r;
-    const y = z.y - z.r - 9;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    roundRect(x, y, w, 4, 2); ctx.fill();
-    ctx.fillStyle = '#ef4444';
-    roundRect(x, y, w * Math.max(0, z.hp / z.maxHp), 4, 2); ctx.fill();
-  }
-}
-
-function drawHUD() {
-  const p = game.player;
-
-  const barW = Math.min(170, W * 0.36);
-  const barH = 17;
-  const bx = 14, by = 14;
-
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  roundRect(bx, by, barW, barH, 8.5); ctx.fill();
-
-  const frac = Math.max(0, Math.min(1, p.hp / p.maxHp));
-  ctx.fillStyle = frac > 0.5 ? '#22c55e' : frac > 0.25 ? '#eab308' : '#ef4444';
-  roundRect(bx, by, barW * frac, barH, 8.5); ctx.fill();
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 11px system-ui, sans-serif';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(`${Math.max(0, Math.ceil(p.hp))} / ${p.maxHp}`, bx + 9, by + barH / 2 + 0.5);
-
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = 'bold 15px system-ui, sans-serif';
-  ctx.fillStyle = '#e6edf3';
-  ctx.fillText(`ВОЛНА ${game.wave}`, W / 2, 23);
-
-  ctx.textAlign = 'right';
-  ctx.font = 'bold 14px system-ui, sans-serif';
-  ctx.fillStyle = '#fbbf24';
-  ctx.fillText(`★ ${game.score}`, W - 68, 23);
-
-  ctx.textAlign = 'left';
-  ctx.font = '12px system-ui, sans-serif';
-  ctx.fillStyle = 'rgba(230,237,243,0.5)';
-  const left = game.zombies.length + game.spawnQueue.length;
-  ctx.fillText(`Врагов: ${left}   Убито: ${game.kills}`, 15, 44);
-}
-
-function drawJoystick() {
-  if (!joystick.active) return;
-
-  ctx.save();
-  ctx.globalAlpha = 0.16;
-  ctx.beginPath();
-  ctx.arc(joystick.bx, joystick.by, JOY_MAX, 0, Math.PI * 2);
-  ctx.fillStyle = '#ffffff';
-  ctx.fill();
-  ctx.globalAlpha = 0.35;
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.restore();
-
-  const kx = joystick.bx + joystick.dx * JOY_MAX;
-  const ky = joystick.by + joystick.dy * JOY_MAX;
-
-  ctx.save();
-  ctx.globalAlpha = 0.75;
-  ctx.beginPath();
-  ctx.arc(kx, ky, 27, 0, Math.PI * 2);
-  const g = ctx.createRadialGradient(kx - 8, ky - 8, 3, kx, ky, 27);
-  g.addColorStop(0, '#93c5fd');
-  g.addColorStop(1, '#3b82f6');
-  ctx.fillStyle = g;
-  ctx.fill();
-  ctx.restore();
-}
-
-function render() {
-  ctx.fillStyle = '#0a0e14';
-  ctx.fillRect(0, 0, W, H);
-
-  ctx.strokeStyle = 'rgba(110, 150, 210, 0.055)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  const gs = 52;
-  for (let x = 0; x < W; x += gs) { ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, H); }
-  for (let y = 0; y < H; y += gs) { ctx.moveTo(0, y + 0.5); ctx.lineTo(W, y + 0.5); }
-  ctx.stroke();
-
-  if (!game.player) return;
-
-  ctx.save();
-  if (shake > 0.3) {
-    ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-  }
-
-  const p = game.player;
-
-  for (const pk of game.pickups) {
-    const pulse = 1 + Math.sin(game.time * 6 + pk.x) * 0.12;
-    const r = pk.r * pulse;
-    ctx.save();
-    ctx.translate(pk.x, pk.y);
-    ctx.beginPath();
-    ctx.arc(0, 0, r + 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = '#16a34a';
-    ctx.fill();
-    ctx.strokeStyle = '#86efac';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = '#ffffff';
-    roundRect(-3.5, -8, 7, 16, 1.5); ctx.fill();
-    roundRect(-8, -3.5, 16, 7, 1.5); ctx.fill();
-    ctx.restore();
-  }
-
-  for (const pt of game.particles) {
-    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
-    ctx.fillStyle = pt.color;
-    ctx.beginPath();
-    ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  for (const z of game.zombies) drawZombie(z);
-
-  ctx.save();
-  ctx.fillStyle = '#fde047';
-  ctx.shadowColor = '#facc15';
-  ctx.shadowBlur = 8;
-  for (const b of game.bullets) {
-    ctx.beginPath();
-    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-
-  drawPlayer(p);
-
-  ctx.restore();
-
-  drawHUD();
-  drawJoystick();
-}
-
-let lastTime = performance.now();
-
-function loop(now) {
-  let dt = (now - lastTime) / 1000;
-  lastTime = now;
-  if (dt > 0.05) dt = 0.05;
-
-  update(dt);
-  render();
-
-  requestAnimationFrame(loop);
-}
-
-showMenu();
-requestAnimationFrame(loop);
-
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('gesturestart', e => e.preventDefault());
-document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+showMenu(); requestAnimationFrame(loop);
 </script>
 </body>
 </html>
