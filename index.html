@@ -110,12 +110,23 @@
   }
 
   #overlay {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    position: absolute; inset: 0; display: flex; align-items: flex-start; justify-content: center;
     background: rgba(4, 8, 16, 0.95);
-    z-index: 10; padding: 20px; text-align: center; overflow-y: auto;
+    z-index: 10; padding: 70px 20px 80px;
+    text-align: center; overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   #overlay.hidden { display: none; }
-  .modal { max-width: 420px; width: 100%; padding: 15px; }
+  .modal { max-width: 420px; width: 100%; padding: 15px; margin: 0 auto; }
+
+  .craft-close-top {
+    position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+    z-index: 100; width: calc(100% - 40px); max-width: 380px;
+    padding: 12px; background: #475569; color: white;
+    border: none; border-radius: 12px; font-weight: 800; font-size: 15px;
+    pointer-events: auto;
+  }
+  .craft-close-top:active { background: #334155; }
   
   .title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin-bottom: 15px; color: #38bdf8; }
   .title.red { color: #ef4444; }
@@ -851,54 +862,89 @@ const BUILD_RECIPES = [
 ];
 
 function openCraftMenu() {
+  if (!overlay.classList.contains('hidden')) return;
   game.state = 'paused';
   joystick.active = false; joystick.dx = 0; joystick.dy = 0;
-  
-  let html = `<button class="btn btn-gray" onclick="closeCraftMenu()" style="margin-bottom: 15px; padding: 10px; font-size: 15px;">✕ ЗАКРЫТЬ</button>`;
-  html += `<h1 class="title" style="color:#8b5cf6">🛠️ ВЕРСТАК</h1><p class="subtitle">Крафт и механизмы</p><div class="craft-list">`;
-
-  CRAFT_RECIPES.forEach(r => {
-    const lvl = tools[r.id]; const isMax = lvl >= r.maxLvl; const cost = isMax ? null : r.costs[lvl - 1];
-    let canAfford = false;
-    if (!isMax) canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
-    html += `<div class="craft-item"><div class="craft-title"><span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span></div><div class="craft-desc">${r.desc}</div>`;
-    if (!isMax) {
-      html += `<div class="craft-cost">Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}</div>
-      <button class="craft-btn" onclick="doCraft('${r.id}')" ${canAfford ? '' : 'disabled'}>УЛУЧШИТЬ</button>`;
-    } else { html += `<div class="craft-cost" style="color:#22c55e">МАКС. УРОВЕНЬ</div>`; }
-    html += `</div>`;
-  });
-
-  if (game.core > 0) {
-    html += `<h2 style="color:#a855f7; margin-top:15px; margin-bottom:10px;">⚡ ИНДУСТРИЯ</h2>`;
-    const bp = game.blueprints || { gen: false, drill: false };
-    BUILD_RECIPES.forEach(r => {
-      const hasBp = bp[r.reqBp];
-      let canAfford = (game.core >= (r.costs[0].core||0)) && (game.iron >= (r.costs[0].iron||0)) && (game.copper >= (r.costs[0].copper||0)) && (game.metal >= (r.costs[0].m||0));
-      html += `<div class="craft-item" style="opacity: ${hasBp ? 1 : 0.6}">
-        <div class="craft-title"><span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}</div>
-        <div class="craft-desc">${r.desc}</div>
-        <div class="craft-cost">Стоимость: ${r.costs[0].core ? `🔮${r.costs[0].core} ` : ''}${r.costs[0].iron ? `⛓️${r.costs[0].iron} ` : ''}${r.costs[0].copper ? `🟠${r.costs[0].copper} ` : ''}${r.costs[0].m ? `⚙️${r.costs[0].m}` : ''}</div>
-        <button class="craft-btn" onclick="buildItem('${r.id}')" ${(canAfford && hasBp) ? '' : 'disabled'}>ПОСТРОИТЬ</button></div>`;
-    });
-  }
-
-  html += `</div><button class="btn btn-gray" onclick="closeCraftMenu()">ЗАКРЫТЬ</button>`;
-  overlayContent.innerHTML = html; overlay.classList.remove('hidden');
+  renderCraftMenu();
 }
 
-window.doCraft = function(id) {
-  const recipe = CRAFT_RECIPES.find(r => r.id === id); const lvl = tools[id];
+function renderCraftMenu() {
+  try {
+    let html = `<button class="craft-close-top" id="craftCloseTop">✕ ЗАКРЫТЬ</button>`;
+    html += `<h1 class="title" style="color:#8b5cf6">🛠️ ВЕРСТАК</h1><p class="subtitle">Крафт и механизмы</p><div class="craft-list">`;
+
+    CRAFT_RECIPES.forEach(r => {
+      const lvl = tools[r.id];
+      const isMax = lvl >= r.maxLvl;
+      let cost = null;
+      let canAfford = false;
+      if (!isMax) {
+        cost = r.costs[lvl - 1];
+        canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
+      }
+      html += `<div class="craft-item"><div class="craft-title"><span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span></div><div class="craft-desc">${r.desc}</div>`;
+      if (!isMax) {
+        html += `<div class="craft-cost">Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}</div>
+        <button class="craft-btn" data-craft="${r.id}" ${canAfford ? '' : 'disabled'}>УЛУЧШИТЬ</button>`;
+      } else {
+        html += `<div class="craft-cost" style="color:#22c55e">МАКС. УРОВЕНЬ</div>`;
+      }
+      html += `</div>`;
+    });
+
+    if (game.core > 0) {
+      html += `<h2 style="color:#a855f7; margin-top:15px; margin-bottom:10px;">⚡ ИНДУСТРИЯ</h2>`;
+      const bp = game.blueprints || { gen: false, drill: false };
+      BUILD_RECIPES.forEach(r => {
+        const hasBp = bp[r.reqBp];
+        const canAfford = (game.core >= (r.costs[0].core||0)) && (game.iron >= (r.costs[0].iron||0)) && (game.copper >= (r.costs[0].copper||0)) && (game.metal >= (r.costs[0].m||0));
+        html += `<div class="craft-item" style="opacity: ${hasBp ? 1 : 0.6}">
+          <div class="craft-title"><span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}</div>
+          <div class="craft-desc">${r.desc}</div>
+          <div class="craft-cost">Стоимость: ${r.costs[0].core ? `🔮${r.costs[0].core} ` : ''}${r.costs[0].iron ? `⛓️${r.costs[0].iron} ` : ''}${r.costs[0].copper ? `🟠${r.costs[0].copper} ` : ''}${r.costs[0].m ? `⚙️${r.costs[0].m}` : ''}</div>
+          <button class="craft-btn" data-build="${r.id}" ${(canAfford && hasBp) ? '' : 'disabled'}>ПОСТРОИТЬ</button></div>`;
+      });
+    }
+
+    html += `</div><button class="btn btn-gray" id="craftCloseBottom">ЗАКРЫТЬ</button>`;
+    overlayContent.innerHTML = html;
+    overlay.classList.remove('hidden');
+
+    document.getElementById('craftCloseTop').addEventListener('click', closeCraftMenu);
+    document.getElementById('craftCloseBottom').addEventListener('click', closeCraftMenu);
+    overlayContent.querySelectorAll('[data-craft]').forEach(btn => {
+      btn.addEventListener('click', () => doCraft(btn.getAttribute('data-craft')));
+    });
+    overlayContent.querySelectorAll('[data-build]').forEach(btn => {
+      btn.addEventListener('click', () => buildItem(btn.getAttribute('data-build')));
+    });
+  } catch (err) {
+    console.error('Ошибка крафта:', err);
+    game.state = 'playing';
+    overlay.classList.add('hidden');
+    showToast('Ошибка: ' + err.message, '#ef4444');
+  }
+}
+
+function doCraft(id) {
+  const recipe = CRAFT_RECIPES.find(r => r.id === id);
+  if (!recipe) return;
+  const lvl = tools[id];
   if (lvl >= recipe.maxLvl) return;
   const cost = recipe.costs[lvl - 1];
+  if (!cost) return;
   if ((game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0))) {
     game.wood -= (cost.w||0); game.metal -= (cost.m||0); game.plastic -= (cost.p||0); game.fabric -= (cost.f||0);
-    tools[id]++; beep(600, 0.1, 'square', 0.08); openCraftMenu(); updateUI();
+    tools[id]++;
+    beep(600, 0.1, 'square', 0.08);
+    updateUI();
+    renderCraftMenu();
   }
-};
+}
 
-window.buildItem = function(id) {
+function buildItem(id) {
   const recipe = BUILD_RECIPES.find(r => r.id === id);
+  if (!recipe) return;
   if (!game.blueprints[recipe.reqBp]) return;
   const c = recipe.costs[0];
   if ((game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0))) {
@@ -907,11 +953,16 @@ window.buildItem = function(id) {
     const bx = player.x + Math.cos(player.angle) * 70;
     const by = player.y + Math.sin(player.angle) * 70;
     buildings.push({ x: bx, y: by, type: id, timer: 0, fuel: id === 'drill' ? 0 : undefined });
-    beep(500, 0.2, 'sine', 0.1); openCraftMenu(); updateUI();
+    beep(500, 0.2, 'sine', 0.1);
+    updateUI();
+    renderCraftMenu();
   }
-};
+}
 
-window.closeCraftMenu = function() { game.state = 'playing'; overlay.classList.add('hidden'); };
+function closeCraftMenu() {
+  game.state = 'playing';
+  overlay.classList.add('hidden');
+}
 
 interactBtn.addEventListener('click', () => {
   if (player.interactMode === 'island') {
@@ -950,7 +1001,7 @@ interactBtn.addEventListener('click', () => {
 });
 
 upgradeBtn.addEventListener('click', upgradeBoat);
-craftBtn.addEventListener('click', openCraftMenu);
+craftBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openCraftMenu(); });
 fishBtn.addEventListener('click', () => { if (fishing.state === 'idle' && !player.isOnFoot) { fishing.state = 'casting'; fishing.timer = 0.5; beep(300, 0.1, 'sine'); updateUI(); } });
 purifyBtn.addEventListener('click', () => { if (purifyTimer <= 0 && !player.isOnFoot) { purifyTimer = Math.max(1, 4.5 - tools.purifier); beep(500, 0.1, 'sawtooth'); updateUI(); } });
 plantBtn.addEventListener('click', () => { if (inventory.seeds > 0 && game.boatLevel >= 2 && !player.isOnFoot) { inventory.seeds--; crops.push({ progress: 0 }); beep(400, 0.1, 'triangle'); updateUI(); } });
@@ -2071,6 +2122,10 @@ function showMenu() {
   overlay.classList.remove('hidden');
   document.getElementById('playBtn').addEventListener('click', startGame);
 }
+
+window.addEventListener('error', e => {
+  console.error('JS ERROR:', e.message, 'at', e.filename, e.lineno);
+});
 
 showMenu();
 requestAnimationFrame(loop);
