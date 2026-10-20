@@ -16,7 +16,7 @@
     color: #f8fafc;
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: none; overscroll-behavior: none;
+    overscroll-behavior: none;
   }
   canvas { display: block; position: absolute; top: 0; left: 0; touch-action: none; }
 
@@ -81,7 +81,6 @@
     width: 100%; aspect-ratio: 1; border-radius: 16px;
     border: 1px solid rgba(255,255,255,0.2); background: rgba(30, 41, 59, 0.9);
     color: white; font-size: 24px; display: flex; justify-content: center; align-items: center;
-    transition: transform 0.1s, background 0.2s;
   }
   .action-btn:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
   .action-btn:disabled { opacity: 0.4; filter: grayscale(1); }
@@ -99,7 +98,6 @@
     background: rgba(15, 23, 42, 0.95); color: #38bdf8; font-weight: 900; font-size: 16px;
     pointer-events: auto; white-space: nowrap;
   }
-  #interactBtn:active { background: rgba(56, 189, 248, 0.2); }
 
   #toast {
     position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
@@ -109,26 +107,50 @@
     max-width: 80%;
   }
 
+  /* КРАФТ: отдельный экран, не overlay */
+  #craftScreen {
+    position: fixed; inset: 0;
+    background: #0f172a;
+    z-index: 9999;
+    display: none;
+    overflow-y: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  #craftScreen.active { display: block; }
+  .craft-inner {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 20px;
+    padding-bottom: 60px;
+    text-align: center;
+  }
+  .craft-close-btn {
+    position: sticky; top: 10px;
+    width: 100%; padding: 14px;
+    background: #ef4444; color: white;
+    border: none; border-radius: 12px;
+    font-weight: 800; font-size: 16px;
+    margin-bottom: 20px;
+    z-index: 10;
+  }
+
+  /* Обычный overlay для меню/паузы */
   #overlay {
     position: absolute; inset: 0;
     background: #0f172a;
-    z-index: 10; display: flex; justify-content: center; align-items: flex-start;
-    overflow-y: auto; text-align: center;
+    z-index: 10;
+    display: none;
+    overflow-y: auto;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    text-align: center;
   }
-  #overlay.hidden { display: none; }
-  .modal { width: 100%; max-width: 420px; padding: 20px; padding-top: 70px; padding-bottom: 80px; margin: 0 auto; }
-
-  .craft-close-top {
-    position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
-    z-index: 100; width: calc(100% - 40px); max-width: 380px;
-    padding: 12px; background: #475569; color: white;
-    border: none; border-radius: 12px; font-weight: 800; font-size: 15px;
-    pointer-events: auto;
-  }
+  #overlay.active { display: block; }
+  .modal { max-width: 420px; width: 100%; padding: 70px 20px 80px; margin: 0 auto; }
   
   .title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin-bottom: 15px; color: #38bdf8; }
   .title.red { color: #ef4444; }
-  .title.purple { color: #a855f7; }
   .subtitle { font-size: 15px; color: #94a3b8; margin-bottom: 25px; line-height: 1.6; }
   
   .btn {
@@ -136,15 +158,14 @@
     background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #0f172a;
     font-size: 17px; font-weight: 800; margin-bottom: 12px;
   }
-  .btn:active { background: #0ea5e9; }
   .btn-gray { background: linear-gradient(135deg, #475569, #334155); color: white; }
   
-  .craft-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 25px; }
   .craft-item {
-    background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255,255,255,0.15);
+    background: #1e293b; border: 1px solid rgba(255,255,255,0.15);
     border-radius: 14px; padding: 15px; text-align: left;
+    margin-bottom: 12px;
   }
-  .craft-item .craft-title { font-weight: 900; font-size: 16px; margin-bottom: 6px; display: flex; justify-content: space-between;}
+  .craft-item .craft-title { font-weight: 900; font-size: 16px; margin-bottom: 6px; display: flex; justify-content: space-between; }
   .craft-item .craft-desc { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4; }
   .craft-item .craft-cost { font-size: 13px; font-weight: 800; margin-bottom: 10px; color: #fbbf24; }
   .craft-item .craft-btn {
@@ -210,18 +231,20 @@
   </div>
 </div>
 
-<div id="overlay" class="hidden"><div class="modal" id="overlayContent"></div></div>
+<div id="overlay"><div class="modal" id="overlayContent"></div></div>
+<div id="craftScreen"><div class="craft-inner" id="craftInner"></div></div>
 
 <script>
 "use strict";
 
-// ИСПРАВЛЕНИЕ ОШИБКИ КРАФТА: переменная объявлена в самом начале
 let lastTime = performance.now();
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
 const overlayContent = document.getElementById('overlayContent');
+const craftScreen = document.getElementById('craftScreen');
+const craftInner = document.getElementById('craftInner');
 const toastEl = document.getElementById('toast');
 
 const uiWood = document.getElementById('uiWood'); const uiMetal = document.getElementById('uiMetal');
@@ -317,6 +340,28 @@ const joystick = { active: false, id: null, bx: 0, by: 0, dx: 0, dy: 0 };
 const JOY_MAX = 55;
 const keys = { w: false, a: false, s: false, d: false };
 
+// ИСПРАВЛЕНО: у турели 3 стоимости (0→1, 1→2, 2→3)
+const CRAFT_RECIPES = [
+  { id: 'rod', name: '🎣 Удочка', maxLvl: 3, desc: 'Ускоряет клев.', costs: [ {w:30, f:10, p:5}, {w:80, f:30, m:20, p:15} ] },
+  { id: 'farm', name: '🌱 Грядка', maxLvl: 3, desc: 'Ускоряет рост урожая.', costs: [ {w:40, p:20}, {w:100, p:50, m:20} ] },
+  { id: 'purifier', name: '💧 Опреснитель', maxLvl: 3, desc: 'Ускоряет очистку воды.', costs: [ {m:20, p:15}, {m:60, p:50, f:20} ] },
+  { id: 'turret', name: '🎯 Гарпунная Турель', maxLvl: 3, desc: 'Стреляет по боссу.', 
+    costs: [ {m:50, p:20, f:10}, {m:150, p:80, f:50}, {m:400, p:200, f:120} ] },
+];
+
+const BUILD_RECIPES = [
+  { id: 'gen', name: '⚡ Генератор', desc: 'Дает энергию. Требует Чертеж.', costs: [{core: 1, iron: 20, copper: 30}], reqBp: 'gen' },
+  { id: 'drill', name: '⛏️ Электробур', desc: 'Копает руду (жрет уголь). Требует Чертеж.', costs: [{iron: 15, copper: 15, m: 20}], reqBp: 'drill' },
+];
+
+// ИСПРАВЛЕНО: универсальный доступ к цене (работает и для турели с 0-го уровня)
+function getRecipeCost(recipe, currentLevel) {
+  if (recipe.id === 'turret') {
+    return recipe.costs[currentLevel] || null;
+  }
+  return recipe.costs[currentLevel - 1] || null;
+}
+
 function showToast(text, color = '#a855f7') {
   toastEl.textContent = text; toastEl.style.background = color;
   toastEl.style.opacity = 1; game.toastTimer = 3;
@@ -377,9 +422,10 @@ function startGame() {
   fishing.state = 'idle'; purifyTimer = 0; bossWarningTimer = 0; shake = 0;
   bossBarContainer.style.display = 'none';
   coreRow.style.display = 'none'; goldRow.style.display = 'none'; diamondRow.style.display = 'none';
+  overlay.classList.remove('active');
+  craftScreen.classList.remove('active');
   game.state = 'playing';
-  overlay.classList.add('hidden');
-  updateUI(); spawnResources(20); // Даём стартовые ресурсы
+  updateUI(); spawnResources(25);
   lastTime = performance.now();
 }
 
@@ -457,7 +503,7 @@ function spawnMegalodon() {
 function spawnResources(n) {
   for (let i = 0; i < n; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 200 + Math.random() * 400; // Ближе к игроку
+    const dist = 200 + Math.random() * 400;
     const r = Math.random();
     let type = 'wood';
     if (r > 0.4 && r <= 0.6) type = 'plastic';
@@ -475,10 +521,10 @@ function spawnResources(n) {
 function spawnShark() {
   if (game.boatLevel < 2 || game.isNight || player.isOnFoot) return;
   const angle = Math.random() * Math.PI * 2;
-  const dist = 1000 + Math.random() * 400; // Спавн очень далеко
+  const dist = 1000 + Math.random() * 400;
   sharks.push({
     x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist,
-    speed: 40 + (game.boatLevel * 5), angle: angle + Math.PI, biteCooldown: 0 // Медленные акулы
+    speed: 40 + (game.boatLevel * 5), angle: angle + Math.PI, biteCooldown: 0
   });
 }
 
@@ -488,10 +534,8 @@ function generateIslandOres() {
     const angle = Math.random() * Math.PI * 2;
     const dist = 100 + Math.random() * (island.r * 0.7);
     ores.push({
-      x: island.x + Math.cos(angle) * dist,
-      y: island.y + Math.sin(angle) * dist,
-      type: Math.random() > 0.5 ? 'copper' : 'iron',
-      hp: 3, seed: Math.random() * 1000
+      x: island.x + Math.cos(angle) * dist, y: island.y + Math.sin(angle) * dist,
+      type: Math.random() > 0.5 ? 'copper' : 'iron', hp: 3, seed: Math.random() * 1000
     });
   }
 }
@@ -537,7 +581,7 @@ function update(dt) {
     game.state = 'gameover';
     beep(150, 0.5, 'sawtooth', 0.1);
     overlayContent.innerHTML = `<h1 class="title red">ТЫ ПОГИБ</h1><p class="subtitle">Твоя история оборвалась...</p><button class="btn" onclick="startGame()">▶ ЗАНОВО</button>`;
-    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
     return;
   }
 
@@ -613,12 +657,8 @@ function update(dt) {
   }
 
   if (game.zone === 'ocean' && !player.isOnFoot) {
-    // Постоянный, но не частый спавн
     spawnTimer -= dt;
-    if (spawnTimer <= 0) { 
-      spawnTimer = 0.8; 
-      if (resources.length < 40) spawnResources(1); 
-    }
+    if (spawnTimer <= 0) { spawnTimer = 0.8; if (resources.length < 40) spawnResources(1); }
 
     if (!game.isNight) {
       sharkTimer -= dt;
@@ -652,8 +692,6 @@ function update(dt) {
         sh.angle = Math.atan2(dy, dx);
         sh.x += Math.cos(sh.angle) * sh.speed * dt;
         sh.y += Math.sin(sh.angle) * sh.speed * dt;
-        
-        // Акула атакует с проверкой неуязвимости
         if (dist < level.size + 15 && sh.biteCooldown <= 0 && player.invuln <= 0) {
           sh.biteCooldown = 4; player.invuln = 2; beep(100, 0.2, 'sawtooth', 0.1);
           player.hp -= 12;
@@ -673,8 +711,7 @@ function update(dt) {
         const dx = megalodon.x - player.x; const dy = megalodon.y - player.y;
         const angle = Math.atan2(dy, dx);
         harpoons.push({
-          x: player.x + Math.cos(angle) * level.size,
-          y: player.y + Math.sin(angle) * level.size,
+          x: player.x + Math.cos(angle) * level.size, y: player.y + Math.sin(angle) * level.size,
           vx: Math.cos(angle) * 800, vy: Math.sin(angle) * 800,
           life: 2, dmg: 30 + (tools.turret * 25), angle: angle
         });
@@ -688,9 +725,7 @@ function update(dt) {
       if (megalodon && megalodon.hp > 0) {
         const dx = megalodon.x - h.x; const dy = megalodon.y - h.y;
         if (Math.hypot(dx, dy) < megalodon.r + 10) {
-          megalodon.hp -= h.dmg;
-          megalodon.hitFlash = 0.2;
-          harpoons.splice(i, 1);
+          megalodon.hp -= h.dmg; megalodon.hitFlash = 0.2; harpoons.splice(i, 1);
           beep(200, 0.1, 'sawtooth', 0.05);
           for(let j=0; j<5; j++) particles.push({ x: h.x, y: h.y, vx: (Math.random()-0.5)*150, vy: (Math.random()-0.5)*150, life: 0.5, maxLife: 0.5, size: 3, color: '#ef4444' });
           continue;
@@ -795,7 +830,6 @@ function update(dt) {
             game.blueprints.drill = true;
             showToast('📜 НАЙДЕН ЧЕРТЕЖ: Электробур!', '#fbbf24');
           }
-
           ores.splice(i, 1);
           beep(800, 0.1, 'sine');
         }
@@ -857,68 +891,57 @@ function update(dt) {
   updateUI();
 }
 
-const CRAFT_RECIPES = [
-  { id: 'rod', name: '🎣 Удочка', maxLvl: 3, desc: 'Ускоряет клев.', costs: [ {w:30, f:10, p:5}, {w:80, f:30, m:20, p:15} ] },
-  { id: 'farm', name: '🌱 Грядка', maxLvl: 3, desc: 'Ускоряет рост урожая.', costs: [ {w:40, p:20}, {w:100, p:50, m:20} ] },
-  { id: 'purifier', name: '💧 Опреснитель', maxLvl: 3, desc: 'Ускоряет очистку воды.', costs: [ {m:20, p:15}, {m:60, p:50, f:20} ] },
-  { id: 'turret', name: '🎯 Гарпунная Турель', maxLvl: 3, desc: 'Стреляет по боссу.', costs: [ {m:100, p:50, f:30}, {m:300, p:150, f:100} ] },
-];
-
-const BUILD_RECIPES = [
-  { id: 'gen', name: '⚡ Генератор', desc: 'Дает энергию. Требует Чертеж.', costs: [{core: 1, iron: 20, copper: 30}], reqBp: 'gen' },
-  { id: 'drill', name: '⛏️ Электробур', desc: 'Копает руду (жрет уголь). Требует Чертеж.', costs: [{iron: 15, copper: 15, m: 20}], reqBp: 'drill' },
-];
-
+// ОТКРЫТИЕ КРАФТА (безопасное)
 function openCraftMenu() {
-  if (!overlay.classList.contains('hidden')) return;
+  if (craftScreen.classList.contains('active')) return;
   game.state = 'paused';
   joystick.active = false; joystick.dx = 0; joystick.dy = 0;
   renderCraftMenu();
+  craftScreen.classList.add('active');
 }
 
 function renderCraftMenu() {
-  try {
-    overlayContent.innerHTML = '';
+  craftInner.innerHTML = '';
+  
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'craft-close-btn';
+  closeBtn.textContent = '✕ ЗАКРЫТЬ';
+  closeBtn.addEventListener('click', closeCraftMenu);
+  craftInner.appendChild(closeBtn);
+
+  const h = document.createElement('h1');
+  h.className = 'title';
+  h.style.color = '#8b5cf6';
+  h.textContent = '🛠️ ВЕРСТАК';
+  craftInner.appendChild(h);
+
+  const sub = document.createElement('p');
+  sub.className = 'subtitle';
+  sub.textContent = 'Крафт и механизмы';
+  craftInner.appendChild(sub);
+
+  // === ОБЫЧНЫЙ КРАФТ ===
+  CRAFT_RECIPES.forEach(r => {
+    const lvl = tools[r.id];
+    const isMax = lvl >= r.maxLvl;
+    const item = document.createElement('div');
+    item.className = 'craft-item';
     
-    const closeTop = document.createElement('button');
-    closeTop.className = 'craft-close-top';
-    closeTop.textContent = '✕ ЗАКРЫТЬ';
-    closeTop.onclick = closeCraftMenu;
-    overlayContent.appendChild(closeTop);
+    const title = document.createElement('div');
+    title.className = 'craft-title';
+    title.innerHTML = `<span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span>`;
+    item.appendChild(title);
 
-    const title = document.createElement('h1');
-    title.className = 'title';
-    title.style.color = '#8b5cf6';
-    title.textContent = '🛠️ ВЕРСТАК';
-    overlayContent.appendChild(title);
+    const desc = document.createElement('div');
+    desc.className = 'craft-desc';
+    desc.textContent = r.desc;
+    item.appendChild(desc);
 
-    const subtitle = document.createElement('p');
-    subtitle.className = 'subtitle';
-    subtitle.textContent = 'Крафт и механизмы';
-    overlayContent.appendChild(subtitle);
-
-    const list = document.createElement('div');
-    list.className = 'craft-list';
-
-    CRAFT_RECIPES.forEach(r => {
-      const lvl = tools[r.id];
-      const isMax = lvl >= r.maxLvl;
-      const item = document.createElement('div');
-      item.className = 'craft-item';
-      
-      const itemTitle = document.createElement('div');
-      itemTitle.className = 'craft-title';
-      itemTitle.innerHTML = `<span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span>`;
-      item.appendChild(itemTitle);
-
-      const itemDesc = document.createElement('div');
-      itemDesc.className = 'craft-desc';
-      itemDesc.textContent = r.desc;
-      item.appendChild(itemDesc);
-
-      if (!isMax) {
-        const cost = r.costs[lvl - 1];
+    if (!isMax) {
+      const cost = getRecipeCost(r, lvl);
+      if (cost) {
         const canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
+        
         const costDiv = document.createElement('div');
         costDiv.className = 'craft-cost';
         costDiv.innerHTML = `Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}`;
@@ -928,73 +951,74 @@ function renderCraftMenu() {
         btn.className = 'craft-btn';
         btn.textContent = 'УЛУЧШИТЬ';
         btn.disabled = !canAfford;
-        btn.onclick = () => doCraft(r.id);
+        btn.addEventListener('click', () => doCraft(r.id));
         item.appendChild(btn);
       } else {
-        const maxDiv = document.createElement('div');
-        maxDiv.className = 'craft-cost';
-        maxDiv.style.color = '#22c55e';
-        maxDiv.textContent = 'МАКС. УРОВЕНЬ';
-        item.appendChild(maxDiv);
+        const noCost = document.createElement('div');
+        noCost.className = 'craft-cost';
+        noCost.style.color = '#ef4444';
+        noCost.textContent = 'НЕТ ДАННЫХ О СТОИМОСТИ';
+        item.appendChild(noCost);
       }
-      list.appendChild(item);
-    });
-
-    if (game.core > 0) {
-      const industryTitle = document.createElement('h2');
-      industryTitle.style.color = '#a855f7';
-      industryTitle.style.marginTop = '15px';
-      industryTitle.style.marginBottom = '10px';
-      industryTitle.textContent = '⚡ ИНДУСТРИЯ';
-      list.appendChild(industryTitle);
-
-      const bp = game.blueprints || { gen: false, drill: false };
-      BUILD_RECIPES.forEach(r => {
-        const hasBp = bp[r.reqBp];
-        const c = r.costs[0];
-        const canAfford = (game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0));
-        const item = document.createElement('div');
-        item.className = 'craft-item';
-        if (!hasBp) item.style.opacity = '0.6';
-
-        const itemTitle = document.createElement('div');
-        itemTitle.className = 'craft-title';
-        itemTitle.innerHTML = `<span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}`;
-        item.appendChild(itemTitle);
-
-        const itemDesc = document.createElement('div');
-        itemDesc.className = 'craft-desc';
-        itemDesc.textContent = r.desc;
-        item.appendChild(itemDesc);
-
-        const costDiv = document.createElement('div');
-        costDiv.className = 'craft-cost';
-        costDiv.innerHTML = `Стоимость: ${c.core ? `🔮${c.core} ` : ''}${c.iron ? `⛓️${c.iron} ` : ''}${c.copper ? `🟠${c.copper} ` : ''}${c.m ? `⚙️${c.m}` : ''}`;
-        item.appendChild(costDiv);
-
-        const btn = document.createElement('button');
-        btn.className = 'craft-btn';
-        btn.textContent = 'ПОСТРОИТЬ';
-        btn.disabled = !(canAfford && hasBp);
-        btn.onclick = () => buildItem(r.id);
-        item.appendChild(btn);
-        list.appendChild(item);
-      });
+    } else {
+      const maxDiv = document.createElement('div');
+      maxDiv.className = 'craft-cost';
+      maxDiv.style.color = '#22c55e';
+      maxDiv.textContent = 'МАКС. УРОВЕНЬ';
+      item.appendChild(maxDiv);
     }
-    overlayContent.appendChild(list);
+    craftInner.appendChild(item);
+  });
 
-    const closeBottom = document.createElement('button');
-    closeBottom.className = 'btn btn-gray';
-    closeBottom.textContent = 'ЗАКРЫТЬ';
-    closeBottom.onclick = closeCraftMenu;
-    overlayContent.appendChild(closeBottom);
+  // === ИНДУСТРИЯ ===
+  if (game.core > 0) {
+    const h2 = document.createElement('h2');
+    h2.style.color = '#a855f7';
+    h2.style.marginTop = '20px';
+    h2.style.marginBottom = '12px';
+    h2.textContent = '⚡ ИНДУСТРИЯ';
+    craftInner.appendChild(h2);
 
-    overlay.classList.remove('hidden');
-  } catch (err) {
-    console.error(err);
-    overlayContent.innerHTML = `<h1 class="title red">ОШИБКА</h1><p style="color:#fff;padding:15px;font-size:14px;">${err.message}</p><button class="btn btn-gray" onclick="closeCraftMenu()">ЗАКРЫТЬ</button>`;
-    overlay.classList.remove('hidden');
+    BUILD_RECIPES.forEach(r => {
+      const hasBp = game.blueprints[r.reqBp];
+      const c = r.costs[0];
+      const canAfford = (game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0));
+      
+      const item = document.createElement('div');
+      item.className = 'craft-item';
+      if (!hasBp) item.style.opacity = '0.6';
+
+      const title = document.createElement('div');
+      title.className = 'craft-title';
+      title.innerHTML = `<span>${r.name}</span>${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}`;
+      item.appendChild(title);
+
+      const desc = document.createElement('div');
+      desc.className = 'craft-desc';
+      desc.textContent = r.desc;
+      item.appendChild(desc);
+
+      const costDiv = document.createElement('div');
+      costDiv.className = 'craft-cost';
+      costDiv.innerHTML = `Стоимость: ${c.core ? `🔮${c.core} ` : ''}${c.iron ? `⛓️${c.iron} ` : ''}${c.copper ? `🟠${c.copper} ` : ''}${c.m ? `⚙️${c.m}` : ''}`;
+      item.appendChild(costDiv);
+
+      const btn = document.createElement('button');
+      btn.className = 'craft-btn';
+      btn.textContent = 'ПОСТРОИТЬ';
+      btn.disabled = !(canAfford && hasBp);
+      btn.addEventListener('click', () => buildItem(r.id));
+      item.appendChild(btn);
+      craftInner.appendChild(item);
+    });
   }
+
+  const closeBtn2 = document.createElement('button');
+  closeBtn2.className = 'btn btn-gray';
+  closeBtn2.style.marginTop = '20px';
+  closeBtn2.textContent = 'ЗАКРЫТЬ';
+  closeBtn2.addEventListener('click', closeCraftMenu);
+  craftInner.appendChild(closeBtn2);
 }
 
 function doCraft(id) {
@@ -1002,7 +1026,7 @@ function doCraft(id) {
   if (!recipe) return;
   const lvl = tools[id];
   if (lvl >= recipe.maxLvl) return;
-  const cost = recipe.costs[lvl - 1];
+  const cost = getRecipeCost(recipe, lvl);
   if (!cost) return;
   if ((game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0))) {
     game.wood -= (cost.w||0); game.metal -= (cost.m||0); game.plastic -= (cost.p||0); game.fabric -= (cost.f||0);
@@ -1029,8 +1053,8 @@ function buildItem(id) {
 }
 
 function closeCraftMenu() {
+  craftScreen.classList.remove('active');
   game.state = 'playing';
-  overlay.classList.add('hidden');
   lastTime = performance.now();
 }
 
@@ -1069,10 +1093,10 @@ pauseBtn.addEventListener('click', () => {
     game.state = 'paused';
     joystick.active = false; joystick.dx = 0; joystick.dy = 0;
     overlayContent.innerHTML = `<h1 class="title">ПАУЗА</h1><button class="btn" id="resumeBtn">▶ ПРОДОЛЖИТЬ</button><button class="btn btn-gray" id="menuBtn">В МЕНЮ</button>`;
-    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
     document.getElementById('resumeBtn').addEventListener('click', () => { 
       game.state = 'playing'; 
-      overlay.classList.add('hidden'); 
+      overlay.classList.remove('active'); 
       lastTime = performance.now();
     });
     document.getElementById('menuBtn').addEventListener('click', showMenu);
@@ -1329,7 +1353,6 @@ function drawBoat() {
     ctx.lineTo(-level.size*0.8, level.size*1.2);
     ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
     ctx.fill();
-
     ctx.strokeStyle = '#b45309'; ctx.lineWidth = 4;
     ctx.stroke();
     
@@ -1371,9 +1394,7 @@ function drawBoat() {
     ctx.lineTo(-level.size*0.8, level.size*1.2);
     ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
     ctx.fill();
-    
-    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5;
-    ctx.stroke();
+    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5; ctx.stroke();
     
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)'; ctx.lineWidth = 1.5;
     ctx.beginPath();
@@ -1420,8 +1441,7 @@ function drawBoat() {
     ctx.lineTo(-level.size*0.8, level.size*1.2);
     ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
     ctx.fill();
-    ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2;
-    ctx.stroke();
+    ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
     
     ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
     ctx.beginPath();
@@ -1457,8 +1477,7 @@ function drawBoat() {
     ctx.lineTo(-level.size*0.9, level.size*1.2);
     ctx.quadraticCurveTo(-level.size*1.1, -level.size*0.5, 0, -level.size*1.8);
     ctx.fill();
-    ctx.strokeStyle = '#475569'; ctx.lineWidth = 3;
-    ctx.stroke();
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 3; ctx.stroke();
     
     ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 4;
     ctx.beginPath();
@@ -1517,17 +1536,14 @@ function drawBoat() {
   if (tools.turret > 0) {
     ctx.save();
     ctx.translate(0, -level.size*0.5);
-    
     ctx.fillStyle = '#1e293b';
     ctx.beginPath(); ctx.arc(0, 0, level.size*0.25, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
-    
     ctx.fillStyle = '#94a3b8';
     for (let i = 0; i < 4; i++) {
       const a = (i / 4) * Math.PI * 2;
       ctx.beginPath(); ctx.arc(Math.cos(a)*level.size*0.18, Math.sin(a)*level.size*0.18, 1.5, 0, Math.PI*2); ctx.fill();
     }
-    
     if (megalodon) {
       const worldAngle = Math.atan2(megalodon.y - player.y, megalodon.x - player.x);
       const localAngle = worldAngle - (player.angle + Math.PI/2);
@@ -1541,7 +1557,6 @@ function drawBoat() {
     ctx.fillRect(0, -2, level.size*0.7, 1);
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(level.size*0.65, -1.5, 4, 3);
-    
     ctx.restore();
   }
 
@@ -1697,8 +1712,7 @@ function drawMegalodon() {
   ctx.fill();
   
   ctx.strokeStyle = megalodon.hitFlash > 0 ? '#ef4444' : '#334155';
-  ctx.lineWidth = 2.5;
-  ctx.stroke();
+  ctx.lineWidth = 2.5; ctx.stroke();
   
   if (megalodon.hitFlash <= 0) {
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)'; ctx.lineWidth = 1;
@@ -1797,13 +1811,8 @@ function drawShark(sh) {
   finGrad.addColorStop(0, '#64748b'); finGrad.addColorStop(1, '#334155');
   ctx.fillStyle = finGrad;
   ctx.beginPath();
-  ctx.moveTo(0, -22);
-  ctx.lineTo(18, 12);
-  ctx.lineTo(8, 14);
-  ctx.lineTo(0, 8);
-  ctx.lineTo(-8, 14);
-  ctx.lineTo(-18, 12);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(0, -22); ctx.lineTo(18, 12); ctx.lineTo(8, 14); ctx.lineTo(0, 8);
+  ctx.lineTo(-8, 14); ctx.lineTo(-18, 12); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1.5; ctx.stroke();
   
   ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
@@ -1821,14 +1830,8 @@ function drawOre(ore) {
   rockGrad.addColorStop(0, '#475569'); rockGrad.addColorStop(1, '#1e293b');
   ctx.fillStyle = rockGrad;
   ctx.beginPath();
-  ctx.moveTo(-22, -8);
-  ctx.lineTo(-15, -22);
-  ctx.lineTo(5, -25);
-  ctx.lineTo(22, -10);
-  ctx.lineTo(20, 12);
-  ctx.lineTo(-5, 25);
-  ctx.lineTo(-20, 15);
-  ctx.closePath(); ctx.fill();
+  ctx.moveTo(-22, -8); ctx.lineTo(-15, -22); ctx.lineTo(5, -25); ctx.lineTo(22, -10);
+  ctx.lineTo(20, 12); ctx.lineTo(-5, 25); ctx.lineTo(-20, 15); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 2; ctx.stroke();
   
   ctx.strokeStyle = 'rgba(0, 0, 0, 0.4)'; ctx.lineWidth = 1;
@@ -1843,26 +1846,18 @@ function drawOre(ore) {
   else if (ore.type === 'diamond') { colors = ['#a5f3fc', '#67e8f9', '#06b6d4']; }
   
   for (let i = 0; i < 3; i++) {
-    const cx = -12 + i * 12;
-    const cy = -3 + (i % 2) * 5;
+    const cx = -12 + i * 12; const cy = -3 + (i % 2) * 5;
     const size = 6 + (i % 2) * 2;
-    
     ctx.fillStyle = colors[i % colors.length];
     ctx.beginPath();
-    ctx.moveTo(cx, cy - size);
-    ctx.lineTo(cx + size*0.6, cy);
-    ctx.lineTo(cx, cy + size);
-    ctx.lineTo(cx - size*0.6, cy);
+    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.6, cy);
+    ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size*0.6, cy);
     ctx.closePath(); ctx.fill();
-    
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'; ctx.lineWidth = 1; ctx.stroke();
-    
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.beginPath();
-    ctx.moveTo(cx, cy - size);
-    ctx.lineTo(cx + size*0.3, cy - size*0.3);
-    ctx.lineTo(cx, cy + size*0.2);
-    ctx.closePath(); ctx.fill();
+    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.3, cy - size*0.3);
+    ctx.lineTo(cx, cy + size*0.2); ctx.closePath(); ctx.fill();
   }
   
   const twinkle = Math.sin(game.time * 3 + ore.seed) * 0.5 + 0.5;
@@ -1878,7 +1873,6 @@ function drawOre(ore) {
     ctx.fillStyle = '#ef4444';
     ctx.fillRect(-17, -31, 34 * (ore.hp/3), 3);
   }
-  
   ctx.restore();
 }
 
@@ -1889,70 +1883,46 @@ function drawMob(m) {
   if (m.type === 'boar') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.beginPath(); ctx.ellipse(0, 12, 28, 8, 0, 0, Math.PI*2); ctx.fill();
-    
     const bodyGrad = ctx.createRadialGradient(-5, -5, 5, 0, 0, 28);
     bodyGrad.addColorStop(0, '#92400e'); bodyGrad.addColorStop(1, '#451a03');
     ctx.fillStyle = bodyGrad;
     ctx.beginPath(); ctx.ellipse(0, 0, 26, 16, 0, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#1c0a02'; ctx.lineWidth = 2; ctx.stroke();
-    
     ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1.5;
     for (let i = -3; i <= 3; i++) {
-      ctx.beginPath();
-      ctx.moveTo(i*4, -13);
-      ctx.lineTo(i*4 + 1, -19);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i*4, -13); ctx.lineTo(i*4 + 1, -19); ctx.stroke();
     }
-    
     ctx.fillStyle = '#7c2d12';
     ctx.beginPath(); ctx.arc(20, 0, 10, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#451a03'; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.fillStyle = '#1c0a02';
     ctx.beginPath(); ctx.arc(22, -3, 1.5, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(22, 3, 1.5, 0, Math.PI*2); ctx.fill();
-    
     ctx.fillStyle = '#f8fafc';
-    ctx.beginPath();
-    ctx.moveTo(24, -6); ctx.lineTo(28, -10); ctx.lineTo(26, -4);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(24, 6); ctx.lineTo(28, 10); ctx.lineTo(26, 4);
-    ctx.fill();
-    
+    ctx.beginPath(); ctx.moveTo(24, -6); ctx.lineTo(28, -10); ctx.lineTo(26, -4); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(24, 6); ctx.lineTo(28, 10); ctx.lineTo(26, 4); ctx.fill();
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(12, -6, 3, 0, Math.PI*2); ctx.fill();
     ctx.fillStyle = '#000';
     ctx.beginPath(); ctx.arc(13, -6, 1.5, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#1c0a02'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(9, -10); ctx.lineTo(15, -9); ctx.stroke();
-    
     ctx.fillStyle = '#451a03';
-    ctx.beginPath();
-    ctx.moveTo(-5, -14); ctx.lineTo(-10, -22); ctx.lineTo(2, -16);
-    ctx.fill();
-    
+    ctx.beginPath(); ctx.moveTo(-5, -14); ctx.lineTo(-10, -22); ctx.lineTo(2, -16); ctx.fill();
   } else if (m.type === 'bat') {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
     ctx.beginPath(); ctx.ellipse(0, 15, 15, 5, 0, 0, Math.PI*2); ctx.fill();
-    
     const wing = Math.sin(game.time * 20) * 12;
-    
     ctx.fillStyle = '#475569';
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-25, -10 + wing); ctx.lineTo(-15, 0); ctx.fill();
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(25, -10 + wing); ctx.lineTo(15, 0); ctx.fill();
-    
     ctx.strokeStyle = '#334155'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-15, -5 + wing*0.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(-10, 2 + wing*0.3); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(15, -5 + wing*0.5); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(10, 2 + wing*0.3); ctx.stroke();
-    
     ctx.fillStyle = '#1e293b';
     ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
-    
     ctx.beginPath(); ctx.moveTo(-5, -8); ctx.lineTo(-8, -15); ctx.lineTo(-2, -10); ctx.fill();
     ctx.beginPath(); ctx.moveTo(5, -8); ctx.lineTo(8, -15); ctx.lineTo(2, -10); ctx.fill();
-    
     ctx.fillStyle = '#ef4444';
     ctx.beginPath(); ctx.arc(-3, -2, 1.5, 0, Math.PI*2); ctx.fill();
     ctx.beginPath(); ctx.arc(3, -2, 1.5, 0, Math.PI*2); ctx.fill();
@@ -1963,7 +1933,6 @@ function drawMob(m) {
 function drawBuilding(b) {
   ctx.save();
   ctx.translate(b.x, b.y);
-  
   if (b.type === 'gen') {
     ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#d8b4fe'; ctx.lineWidth = 4; ctx.stroke();
@@ -1975,9 +1944,7 @@ function drawBuilding(b) {
     ctx.strokeStyle = b.fuel > 0 ? '#22c55e' : '#ef4444'; ctx.lineWidth = 3; ctx.strokeRect(-25, -25, 50, 50);
     ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(15,10); ctx.lineTo(-15,10); ctx.fill();
     if (b.fuel > 0) { 
-      ctx.fillStyle = '#22c55e'; 
-      ctx.font = 'bold 14px sans-serif'; 
-      ctx.textAlign = 'center';
+      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
       ctx.fillText(b.fuel, 0, 42); 
     }
   }
@@ -1996,31 +1963,16 @@ function drawPlayer() {
       ctx.fillStyle = fishing.state === 'biting' ? '#ef4444' : '#fbbf24';
       ctx.beginPath(); ctx.arc(lineX, lineY, 6, 0, Math.PI*2); ctx.fill();
       if (fishing.state === 'biting') { 
-        ctx.fillStyle = '#fff'; 
-        ctx.font = 'bold 30px sans-serif'; 
-        ctx.textAlign='center'; 
+        ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign='center'; 
         ctx.fillText('❗', lineX, lineY - 20); 
       }
     }
   } else {
-    ctx.save(); 
-    ctx.translate(player.x, player.y); 
-    ctx.rotate(player.angle);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; 
-    ctx.beginPath(); 
-    ctx.ellipse(0, 5, 15, 8, 0, 0, Math.PI*2); 
-    ctx.fill();
-    ctx.fillStyle = '#38bdf8'; 
-    ctx.beginPath(); 
-    ctx.arc(0, 0, 14, 0, Math.PI*2); 
-    ctx.fill();
-    ctx.strokeStyle = '#bae6fd'; 
-    ctx.lineWidth = 2; 
-    ctx.stroke();
-    ctx.fillStyle = '#fff'; 
-    ctx.beginPath(); 
-    ctx.arc(6, -4, 3, 0, Math.PI*2); 
-    ctx.fill();
+    ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(0, 5, 15, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#bae6fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(6, -4, 3, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
 }
@@ -2028,17 +1980,14 @@ function drawPlayer() {
 function draw() {
   if (game.zone === 'ocean' || game.zone === 'island') drawOceanBg();
   else if (game.zone === 'cave') { 
-    ctx.fillStyle = '#020617'; 
-    ctx.fillRect(0, 0, W, H); 
+    ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, W, H); 
   }
 
   if (game.state === 'menu') return;
 
   ctx.save();
   if (shake > 0.3) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-  ctx.translate(W/2, H/2); 
-  ctx.scale(game.camera.zoom, game.camera.zoom); 
-  ctx.translate(-game.camera.x, -game.camera.y);
+  ctx.translate(W/2, H/2); ctx.scale(game.camera.zoom, game.camera.zoom); ctx.translate(-game.camera.x, -game.camera.y);
 
   if (game.zone === 'island' || game.zone === 'ocean') drawIsland();
 
@@ -2048,23 +1997,13 @@ function draw() {
 
   if (game.zone === 'cave') {
     if (game.caveDepth < 3) {
-      ctx.fillStyle = '#475569'; 
-      ctx.fillRect(elevatorPos.x - 30, elevatorPos.y - 30, 60, 60);
-      ctx.strokeStyle = '#fbbf24'; 
-      ctx.lineWidth = 3; 
-      ctx.strokeRect(elevatorPos.x - 30, elevatorPos.y - 30, 60, 60);
-      ctx.fillStyle = '#fbbf24'; 
-      ctx.font = 'bold 30px sans-serif'; 
-      ctx.textAlign = 'center'; 
+      ctx.fillStyle = '#475569'; ctx.fillRect(elevatorPos.x - 30, elevatorPos.y - 30, 60, 60);
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3; ctx.strokeRect(elevatorPos.x - 30, elevatorPos.y - 30, 60, 60);
+      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center'; 
       ctx.fillText('🛗', elevatorPos.x, elevatorPos.y + 10);
     }
-    ctx.fillStyle = '#1e293b'; 
-    ctx.beginPath(); 
-    ctx.arc(exitPos.x, exitPos.y, 40, 0, Math.PI*2); 
-    ctx.fill();
-    ctx.fillStyle = '#fff'; 
-    ctx.font = 'bold 24px sans-serif'; 
-    ctx.textAlign = 'center'; 
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(exitPos.x, exitPos.y, 40, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center'; 
     ctx.fillText('🚪', exitPos.x, exitPos.y + 8);
   }
 
@@ -2074,21 +2013,11 @@ function draw() {
   if (megalodon) drawMegalodon();
 
   for (const h of harpoons) {
-    ctx.save(); 
-    ctx.translate(h.x, h.y); 
-    ctx.rotate(h.angle);
-    ctx.strokeStyle = '#d97706'; 
-    ctx.lineWidth = 4;
-    ctx.beginPath(); 
-    ctx.moveTo(-20, 0); 
-    ctx.lineTo(10, 0); 
-    ctx.stroke();
+    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.angle);
+    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(10, 0); ctx.stroke();
     ctx.fillStyle = '#cbd5e1';
-    ctx.beginPath(); 
-    ctx.moveTo(15, 0); 
-    ctx.lineTo(5, -6); 
-    ctx.lineTo(5, 6); 
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(5, -6); ctx.lineTo(5, 6); ctx.fill();
     ctx.restore();
   }
 
@@ -2100,54 +2029,35 @@ function draw() {
   drawPlayer();
 
   for (const pt of particles) {
-    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife); 
-    ctx.fillStyle = pt.color;
-    ctx.beginPath(); 
-    ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); 
-    ctx.fill();
+    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife); ctx.fillStyle = pt.color;
+    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
 
   if (game.zone === 'ocean' && game.isNight) {
     const lightGrad = ctx.createRadialGradient(player.x, player.y, 80, player.x, player.y, 350);
-    lightGrad.addColorStop(0, 'rgba(15, 23, 42, 0)'); 
-    lightGrad.addColorStop(1, 'rgba(2, 6, 23, 0.9)');
-    ctx.fillStyle = lightGrad; 
-    ctx.beginPath(); 
-    ctx.arc(player.x, player.y, 450, 0, Math.PI*2); 
-    ctx.fill();
+    lightGrad.addColorStop(0, 'rgba(15, 23, 42, 0)'); lightGrad.addColorStop(1, 'rgba(2, 6, 23, 0.9)');
+    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 450, 0, Math.PI*2); ctx.fill();
   } else if (game.zone === 'cave') {
     const darkness = Math.min(0.95, 0.8 + game.caveDepth * 0.05);
     const lightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 200);
-    lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); 
-    lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
-    ctx.fillStyle = lightGrad; 
-    ctx.beginPath(); 
-    ctx.arc(player.x, player.y, 300, 0, Math.PI*2); 
-    ctx.fill();
+    lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
+    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 300, 0, Math.PI*2); ctx.fill();
   }
 
   ctx.restore();
 
   if (joystick.active) {
-    ctx.save(); 
-    ctx.globalAlpha = 0.2;
-    ctx.beginPath(); 
-    ctx.arc(joystick.bx, joystick.by, JOY_MAX, 0, Math.PI*2); 
-    ctx.fillStyle = '#ffffff'; 
-    ctx.fill();
+    ctx.save(); ctx.globalAlpha = 0.2;
+    ctx.beginPath(); ctx.arc(joystick.bx, joystick.by, JOY_MAX, 0, Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill();
     ctx.globalAlpha = 0.6;
-    ctx.beginPath(); 
-    ctx.arc(joystick.bx + joystick.dx*JOY_MAX, joystick.by + joystick.dy*JOY_MAX, 22, 0, Math.PI*2); 
-    ctx.fillStyle = '#38bdf8'; 
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(joystick.bx + joystick.dx*JOY_MAX, joystick.by + joystick.dy*JOY_MAX, 22, 0, Math.PI*2); ctx.fillStyle = '#38bdf8'; ctx.fill();
     ctx.restore();
   }
 
   if (bossWarningTimer > 0 && !megalodon) {
     ctx.fillStyle = 'rgba(239, 68, 68, ' + (Math.sin(game.time * 15) * 0.5 + 0.5) + ')';
-    ctx.font = '900 22px system-ui, sans-serif'; 
-    ctx.textAlign = 'center';
+    ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('ВНИМАНИЕ: МЕГАЛОДОН', W/2, H/2 - 60);
     ctx.fillText('ПРИБЛИЖАЕТСЯ', W/2, H/2 - 30);
   }
@@ -2180,7 +2090,7 @@ function showMenu() {
       <p>🕳️ В пещере найди чертеж Бура и спустись на лифте</p>
       <p>⚡ Построй Генератор и Электробур (жрет уголь)</p>
     </div>`;
-  overlay.classList.remove('hidden');
+  overlay.classList.add('active');
   document.getElementById('playBtn').addEventListener('click', startGame);
 }
 
