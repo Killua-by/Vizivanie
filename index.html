@@ -215,6 +215,9 @@
 <script>
 "use strict";
 
+// ИСПРАВЛЕНИЕ ОШИБКИ КРАФТА: переменная объявлена в самом начале
+let lastTime = performance.now();
+
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const overlay = document.getElementById('overlay');
@@ -274,7 +277,7 @@ const game = {
 const player = {
   x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI/2, wakeTimer: 0,
   hp: 100, maxHp: 100, hunger: 100, maxHunger: 100, thirst: 100, maxThirst: 100,
-  isOnFoot: false, interactMode: 'none'
+  isOnFoot: false, interactMode: 'none', invuln: 0
 };
 
 const inventory = { fish: 0, water: 0, seeds: 0, crops: 0, meat: 0 };
@@ -364,7 +367,7 @@ function startGame() {
   game.blueprints = { gen: false, drill: false };
   game.toastTimer = 0;
   tools.rod = 1; tools.farm = 1; tools.purifier = 1; tools.turret = 0;
-  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0; player.isOnFoot = false;
+  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0; player.isOnFoot = false; player.invuln = 0;
   player.hp = 100; player.hunger = 100; player.thirst = 100;
   inventory.fish = 0; inventory.water = 0; inventory.seeds = 0; inventory.crops = 0; inventory.meat = 0;
   crops = []; megalodon = null; harpoons = []; buildings = []; mobs = []; ores = [];
@@ -376,7 +379,7 @@ function startGame() {
   coreRow.style.display = 'none'; goldRow.style.display = 'none'; diamondRow.style.display = 'none';
   game.state = 'playing';
   overlay.classList.add('hidden');
-  updateUI(); spawnResources(15);
+  updateUI(); spawnResources(20); // Даём стартовые ресурсы
   lastTime = performance.now();
 }
 
@@ -454,7 +457,7 @@ function spawnMegalodon() {
 function spawnResources(n) {
   for (let i = 0; i < n; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 300 + Math.random() * 500;
+    const dist = 200 + Math.random() * 400; // Ближе к игроку
     const r = Math.random();
     let type = 'wood';
     if (r > 0.4 && r <= 0.6) type = 'plastic';
@@ -472,10 +475,10 @@ function spawnResources(n) {
 function spawnShark() {
   if (game.boatLevel < 2 || game.isNight || player.isOnFoot) return;
   const angle = Math.random() * Math.PI * 2;
-  const dist = 600;
+  const dist = 1000 + Math.random() * 400; // Спавн очень далеко
   sharks.push({
     x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist,
-    speed: 100 + (game.boatLevel * 10), angle: angle + Math.PI, biteCooldown: 0
+    speed: 40 + (game.boatLevel * 5), angle: angle + Math.PI, biteCooldown: 0 // Медленные акулы
   });
 }
 
@@ -511,6 +514,7 @@ function update(dt) {
   game.time += dt;
   if (shake > 0) shake = Math.max(0, shake - dt * 60);
   if (game.toastTimer > 0) { game.toastTimer -= dt; if (game.toastTimer <= 0) toastEl.style.opacity = 0; }
+  if (player.invuln > 0) player.invuln -= dt;
 
   if (bossWarningTimer > 0) {
     bossWarningTimer -= dt;
@@ -609,12 +613,16 @@ function update(dt) {
   }
 
   if (game.zone === 'ocean' && !player.isOnFoot) {
+    // Постоянный, но не частый спавн
     spawnTimer -= dt;
-    if (spawnTimer <= 0) { spawnTimer = 1.5; if (resources.length < 30) spawnResources(2); }
+    if (spawnTimer <= 0) { 
+      spawnTimer = 0.8; 
+      if (resources.length < 40) spawnResources(1); 
+    }
 
     if (!game.isNight) {
       sharkTimer -= dt;
-      if (sharkTimer <= 0) { sharkTimer = 10; if (sharks.length < 2) spawnShark(); }
+      if (sharkTimer <= 0) { sharkTimer = 15; if (sharks.length < 2) spawnShark(); }
     }
 
     for (let i = resources.length - 1; i >= 0; i--) {
@@ -633,7 +641,6 @@ function update(dt) {
         else if (res.type === 'fabric') { game.fabric += 2; beep(350, 0.08, 'triangle', 0.04); }
         else if (res.type === 'seed') { inventory.seeds++; beep(600, 0.1, 'sine', 0.05); }
         resources.splice(i, 1);
-        spawnResources(1);
       }
     }
 
@@ -645,16 +652,18 @@ function update(dt) {
         sh.angle = Math.atan2(dy, dx);
         sh.x += Math.cos(sh.angle) * sh.speed * dt;
         sh.y += Math.sin(sh.angle) * sh.speed * dt;
-        if (dist < level.size + 15 && sh.biteCooldown <= 0) {
-          sh.biteCooldown = 2; beep(100, 0.2, 'sawtooth', 0.1);
-          player.hp -= 15;
-          sh.x -= Math.cos(sh.angle) * 100; sh.y -= Math.sin(sh.angle) * 100;
+        
+        // Акула атакует с проверкой неуязвимости
+        if (dist < level.size + 15 && sh.biteCooldown <= 0 && player.invuln <= 0) {
+          sh.biteCooldown = 4; player.invuln = 2; beep(100, 0.2, 'sawtooth', 0.1);
+          player.hp -= 12;
+          sh.x -= Math.cos(sh.angle) * 250; sh.y -= Math.sin(sh.angle) * 250;
           shake = Math.min(15, shake + 8);
           for(let j=0; j<10; j++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*100, vy: (Math.random()-0.5)*100, life: 0.5, maxLife: 0.5, size: 3, color: '#ef4444' });
         }
       }
       if (sh.biteCooldown > 0) sh.biteCooldown -= dt;
-      if (dist > 1500) sharks.splice(i, 1);
+      if (dist > 2000) sharks.splice(i, 1);
     }
 
     if (tools.turret > 0 && megalodon && megalodon.hp > 0) {
@@ -868,88 +877,38 @@ function openCraftMenu() {
 }
 
 function renderCraftMenu() {
-  overlayContent.innerHTML = '';
-  
-  const closeTop = document.createElement('button');
-  closeTop.className = 'craft-close-top';
-  closeTop.textContent = '✕ ЗАКРЫТЬ';
-  closeTop.onclick = closeCraftMenu;
-  overlayContent.appendChild(closeTop);
-
-  const title = document.createElement('h1');
-  title.className = 'title';
-  title.style.color = '#8b5cf6';
-  title.textContent = '🛠️ ВЕРСТАК';
-  overlayContent.appendChild(title);
-
-  const subtitle = document.createElement('p');
-  subtitle.className = 'subtitle';
-  subtitle.textContent = 'Крафт и механизмы';
-  overlayContent.appendChild(subtitle);
-
-  const list = document.createElement('div');
-  list.className = 'craft-list';
-
-  CRAFT_RECIPES.forEach(r => {
-    const lvl = tools[r.id];
-    const isMax = lvl >= r.maxLvl;
-    const item = document.createElement('div');
-    item.className = 'craft-item';
+  try {
+    overlayContent.innerHTML = '';
     
-    const itemTitle = document.createElement('div');
-    itemTitle.className = 'craft-title';
-    itemTitle.innerHTML = `<span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span>`;
-    item.appendChild(itemTitle);
+    const closeTop = document.createElement('button');
+    closeTop.className = 'craft-close-top';
+    closeTop.textContent = '✕ ЗАКРЫТЬ';
+    closeTop.onclick = closeCraftMenu;
+    overlayContent.appendChild(closeTop);
 
-    const itemDesc = document.createElement('div');
-    itemDesc.className = 'craft-desc';
-    itemDesc.textContent = r.desc;
-    item.appendChild(itemDesc);
+    const title = document.createElement('h1');
+    title.className = 'title';
+    title.style.color = '#8b5cf6';
+    title.textContent = '🛠️ ВЕРСТАК';
+    overlayContent.appendChild(title);
 
-    if (!isMax) {
-      const cost = r.costs[lvl - 1];
-      const canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
-      const costDiv = document.createElement('div');
-      costDiv.className = 'craft-cost';
-      costDiv.innerHTML = `Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}`;
-      item.appendChild(costDiv);
+    const subtitle = document.createElement('p');
+    subtitle.className = 'subtitle';
+    subtitle.textContent = 'Крафт и механизмы';
+    overlayContent.appendChild(subtitle);
 
-      const btn = document.createElement('button');
-      btn.className = 'craft-btn';
-      btn.textContent = 'УЛУЧШИТЬ';
-      btn.disabled = !canAfford;
-      btn.onclick = () => doCraft(r.id);
-      item.appendChild(btn);
-    } else {
-      const maxDiv = document.createElement('div');
-      maxDiv.className = 'craft-cost';
-      maxDiv.style.color = '#22c55e';
-      maxDiv.textContent = 'МАКС. УРОВЕНЬ';
-      item.appendChild(maxDiv);
-    }
-    list.appendChild(item);
-  });
+    const list = document.createElement('div');
+    list.className = 'craft-list';
 
-  if (game.core > 0) {
-    const industryTitle = document.createElement('h2');
-    industryTitle.style.color = '#a855f7';
-    industryTitle.style.marginTop = '15px';
-    industryTitle.style.marginBottom = '10px';
-    industryTitle.textContent = '⚡ ИНДУСТРИЯ';
-    list.appendChild(industryTitle);
-
-    const bp = game.blueprints || { gen: false, drill: false };
-    BUILD_RECIPES.forEach(r => {
-      const hasBp = bp[r.reqBp];
-      const c = r.costs[0];
-      const canAfford = (game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0));
+    CRAFT_RECIPES.forEach(r => {
+      const lvl = tools[r.id];
+      const isMax = lvl >= r.maxLvl;
       const item = document.createElement('div');
       item.className = 'craft-item';
-      if (!hasBp) item.style.opacity = '0.6';
-
+      
       const itemTitle = document.createElement('div');
       itemTitle.className = 'craft-title';
-      itemTitle.innerHTML = `<span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}`;
+      itemTitle.innerHTML = `<span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span>`;
       item.appendChild(itemTitle);
 
       const itemDesc = document.createElement('div');
@@ -957,29 +916,85 @@ function renderCraftMenu() {
       itemDesc.textContent = r.desc;
       item.appendChild(itemDesc);
 
-      const costDiv = document.createElement('div');
-      costDiv.className = 'craft-cost';
-      costDiv.innerHTML = `Стоимость: ${c.core ? `🔮${c.core} ` : ''}${c.iron ? `⛓️${c.iron} ` : ''}${c.copper ? `🟠${c.copper} ` : ''}${c.m ? `⚙️${c.m}` : ''}`;
-      item.appendChild(costDiv);
+      if (!isMax) {
+        const cost = r.costs[lvl - 1];
+        const canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
+        const costDiv = document.createElement('div');
+        costDiv.className = 'craft-cost';
+        costDiv.innerHTML = `Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}`;
+        item.appendChild(costDiv);
 
-      const btn = document.createElement('button');
-      btn.className = 'craft-btn';
-      btn.textContent = 'ПОСТРОИТЬ';
-      btn.disabled = !(canAfford && hasBp);
-      btn.onclick = () => buildItem(r.id);
-      item.appendChild(btn);
+        const btn = document.createElement('button');
+        btn.className = 'craft-btn';
+        btn.textContent = 'УЛУЧШИТЬ';
+        btn.disabled = !canAfford;
+        btn.onclick = () => doCraft(r.id);
+        item.appendChild(btn);
+      } else {
+        const maxDiv = document.createElement('div');
+        maxDiv.className = 'craft-cost';
+        maxDiv.style.color = '#22c55e';
+        maxDiv.textContent = 'МАКС. УРОВЕНЬ';
+        item.appendChild(maxDiv);
+      }
       list.appendChild(item);
     });
+
+    if (game.core > 0) {
+      const industryTitle = document.createElement('h2');
+      industryTitle.style.color = '#a855f7';
+      industryTitle.style.marginTop = '15px';
+      industryTitle.style.marginBottom = '10px';
+      industryTitle.textContent = '⚡ ИНДУСТРИЯ';
+      list.appendChild(industryTitle);
+
+      const bp = game.blueprints || { gen: false, drill: false };
+      BUILD_RECIPES.forEach(r => {
+        const hasBp = bp[r.reqBp];
+        const c = r.costs[0];
+        const canAfford = (game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0));
+        const item = document.createElement('div');
+        item.className = 'craft-item';
+        if (!hasBp) item.style.opacity = '0.6';
+
+        const itemTitle = document.createElement('div');
+        itemTitle.className = 'craft-title';
+        itemTitle.innerHTML = `<span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}`;
+        item.appendChild(itemTitle);
+
+        const itemDesc = document.createElement('div');
+        itemDesc.className = 'craft-desc';
+        itemDesc.textContent = r.desc;
+        item.appendChild(itemDesc);
+
+        const costDiv = document.createElement('div');
+        costDiv.className = 'craft-cost';
+        costDiv.innerHTML = `Стоимость: ${c.core ? `🔮${c.core} ` : ''}${c.iron ? `⛓️${c.iron} ` : ''}${c.copper ? `🟠${c.copper} ` : ''}${c.m ? `⚙️${c.m}` : ''}`;
+        item.appendChild(costDiv);
+
+        const btn = document.createElement('button');
+        btn.className = 'craft-btn';
+        btn.textContent = 'ПОСТРОИТЬ';
+        btn.disabled = !(canAfford && hasBp);
+        btn.onclick = () => buildItem(r.id);
+        item.appendChild(btn);
+        list.appendChild(item);
+      });
+    }
+    overlayContent.appendChild(list);
+
+    const closeBottom = document.createElement('button');
+    closeBottom.className = 'btn btn-gray';
+    closeBottom.textContent = 'ЗАКРЫТЬ';
+    closeBottom.onclick = closeCraftMenu;
+    overlayContent.appendChild(closeBottom);
+
+    overlay.classList.remove('hidden');
+  } catch (err) {
+    console.error(err);
+    overlayContent.innerHTML = `<h1 class="title red">ОШИБКА</h1><p style="color:#fff;padding:15px;font-size:14px;">${err.message}</p><button class="btn btn-gray" onclick="closeCraftMenu()">ЗАКРЫТЬ</button>`;
+    overlay.classList.remove('hidden');
   }
-  overlayContent.appendChild(list);
-
-  const closeBottom = document.createElement('button');
-  closeBottom.className = 'btn btn-gray';
-  closeBottom.textContent = 'ЗАКРЫТЬ';
-  closeBottom.onclick = closeCraftMenu;
-  overlayContent.appendChild(closeBottom);
-
-  overlay.classList.remove('hidden');
 }
 
 function doCraft(id) {
@@ -2102,7 +2117,7 @@ function draw() {
     ctx.arc(player.x, player.y, 450, 0, Math.PI*2); 
     ctx.fill();
   } else if (game.zone === 'cave') {
-    const darkness = Math.min(0.95, 0.8 + game.caveDepth * 0.);
+    const darkness = Math.min(0.95, 0.8 + game.caveDepth * 0.05);
     const lightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 200);
     lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); 
     lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
@@ -2138,13 +2153,11 @@ function draw() {
   }
 }
 
-let lastTime = performance.now();
 function loop(now) {
   let dt = (now - lastTime) / 1000; 
   lastTime = now;
   if (dt > 0.05) dt = 0.05;
 
-  // === ГЛАВНОЕ ИСПРАВЛЕНИЕ: Игра обновляется и рисуется ТОЛЬКО когда state === 'playing' ===
   if (game.state === 'playing') {
     update(dt); 
     draw(); 
