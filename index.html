@@ -16,15 +16,13 @@
     color: #f8fafc;
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
-    touch-action: none;
-    overscroll-behavior: none;
+    touch-action: none; overscroll-behavior: none;
   }
   canvas { display: block; position: absolute; top: 0; left: 0; touch-action: none; }
 
   #uiLayer {
     position: absolute; inset: 0; pointer-events: none;
-    display: flex; flex-direction: column; justify-content: space-between;
-    padding: 10px;
+    display: flex; flex-direction: column; justify-content: space-between; padding: 10px;
   }
 
   .top-panel { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -52,10 +50,12 @@
     background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.15);
     border-radius: 12px; padding: 10px 14px; backdrop-filter: blur(8px);
     display: grid; grid-template-columns: 1fr 1fr; gap: 6px 15px;
-    font-weight: 800; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    font-weight: 800; font-size: 14px;
   }
-  .res-wood { color: #fbbf24; } .res-metal { color: #cbd5e1; } .res-plastic { color: #38bdf8; } .res-fabric { color: #d8b4fe; }
-  .res-copper { color: #f97316; } .res-iron { color: #94a3b8; } .res-coal { color: #1e293b; } .res-gold { color: #fbbf24; } .res-diamond { color: #67e8f9; }
+  .res-wood { color: #fbbf24; } .res-metal { color: #cbd5e1; }
+  .res-plastic { color: #38bdf8; } .res-fabric { color: #d8b4fe; }
+  .res-copper { color: #f97316; } .res-iron { color: #94a3b8; }
+  .res-coal { color: #cbd5e1; } .res-gold { color: #fbbf24; } .res-diamond { color: #67e8f9; }
   .res-core { color: #a855f7; font-size: 16px; grid-column: span 2; text-align: center; }
 
   #pauseBtn {
@@ -72,7 +72,6 @@
   }
 
   .bottom-panel { display: flex; justify-content: flex-end; align-items: flex-end; }
-  
   .actions {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
     pointer-events: auto; width: 100%; max-width: 300px; margin-left: auto;
@@ -86,7 +85,6 @@
   }
   .action-btn:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
   .action-btn:disabled { opacity: 0.4; filter: grayscale(1); }
-  
   .action-btn.upgrade-btn {
     grid-column: span 4; width: 100%; aspect-ratio: auto; height: 50px;
     font-size: 14px; font-weight: 900; border-radius: 12px;
@@ -104,13 +102,12 @@
   }
   #interactBtn:active { background: rgba(56, 189, 248, 0.2); }
 
-  /* Уведомления */
   #toast {
-    position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+    position: absolute; top: 22%; left: 50%; transform: translateX(-50%);
     background: rgba(168, 85, 247, 0.9); color: white; padding: 10px 20px;
     border-radius: 20px; font-weight: 800; font-size: 14px; pointer-events: none;
     opacity: 0; transition: opacity 0.3s; z-index: 20; text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 80%;
   }
 
   #overlay {
@@ -128,8 +125,8 @@
   
   .btn {
     width: 100%; padding: 16px; border: none; border-radius: 14px;
-    background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #0f172a; font-size: 17px; font-weight: 800;
-    margin-bottom: 12px;
+    background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #0f172a;
+    font-size: 17px; font-weight: 800; margin-bottom: 12px;
   }
   .btn:active { background: #0ea5e9; transform: scale(0.98); }
   .btn-gray { background: linear-gradient(135deg, #475569, #334155); color: white; }
@@ -142,7 +139,6 @@
   .craft-item .craft-title { font-weight: 900; font-size: 16px; margin-bottom: 6px; display: flex; justify-content: space-between;}
   .craft-item .craft-desc { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4; }
   .craft-item .craft-cost { font-size: 13px; font-weight: 800; margin-bottom: 10px; color: #fbbf24; }
-  .craft-item .craft-cost span { margin-right: 12px; }
   .craft-item .craft-btn {
     width: 100%; padding: 12px; border-radius: 10px; border: none;
     background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; font-weight: 800; font-size: 15px;
@@ -170,16 +166,16 @@
       </div>
     </div>
     <div class="resources">
-      <div class="res-row"><span class="res-wood">🪵</span> <span id="uiWood">0</span></div>
-      <div class="res-row"><span class="res-metal">⚙️</span> <span id="uiMetal">0</span></div>
-      <div class="res-row"><span class="res-plastic">🧴</span> <span id="uiPlastic">0</span></div>
-      <div class="res-row"><span class="res-fabric">🧵</span> <span id="uiFabric">0</span></div>
-      <div class="res-row"><span class="res-copper">🟠</span> <span id="uiCopper">0</span></div>
-      <div class="res-row"><span class="res-iron">⛓️</span> <span id="uiIron">0</span></div>
-      <div class="res-row"><span class="res-coal">⚫</span> <span id="uiCoal">0</span></div>
-      <div class="res-row" id="goldRow" style="display:none;"><span class="res-gold">🟡</span> <span id="uiGold">0</span></div>
-      <div class="res-row" id="diamondRow" style="display:none;"><span class="res-diamond">💎</span> <span id="uiDiamond">0</span></div>
-      <div class="res-row res-core" id="coreRow" style="display:none;">🔮 <span id="uiCore">0</span></div>
+      <div><span class="res-wood">🪵</span> <span id="uiWood">0</span></div>
+      <div><span class="res-metal">⚙️</span> <span id="uiMetal">0</span></div>
+      <div><span class="res-plastic">🧴</span> <span id="uiPlastic">0</span></div>
+      <div><span class="res-fabric">🧵</span> <span id="uiFabric">0</span></div>
+      <div><span class="res-copper">🟠</span> <span id="uiCopper">0</span></div>
+      <div><span class="res-iron">⛓️</span> <span id="uiIron">0</span></div>
+      <div><span class="res-coal">⚫</span> <span id="uiCoal">0</span></div>
+      <div id="goldRow" style="display:none;"><span class="res-gold">🟡</span> <span id="uiGold">0</span></div>
+      <div id="diamondRow" style="display:none;"><span class="res-diamond">💎</span> <span id="uiDiamond">0</span></div>
+      <div class="res-core" id="coreRow" style="display:none;">🔮 <span id="uiCore">0</span></div>
     </div>
   </div>
   
@@ -227,7 +223,6 @@ const uiCost = document.getElementById('uiCost'); const upgradeBtn = document.ge
 const fishBtn = document.getElementById('fishBtn'); const purifyBtn = document.getElementById('purifyBtn');
 const plantBtn = document.getElementById('plantBtn'); const craftBtn = document.getElementById('craftBtn');
 const pauseBtn = document.getElementById('pauseBtn'); const interactBtn = document.getElementById('interactBtn');
-
 const bossBarContainer = document.getElementById('bossBarContainer'); const bossHpBar = document.getElementById('bossHpBar');
 const invFish = document.getElementById('invFish'); const invWater = document.getElementById('invWater'); const invMeat = document.getElementById('invMeat');
 const hpBar = document.getElementById('hpBar'); const hungerBar = document.getElementById('hungerBar'); const thirstBar = document.getElementById('thirstBar');
@@ -242,6 +237,7 @@ function resize() {
 }
 window.addEventListener('resize', resize); resize();
 
+/* ===== АУДИО ===== */
 let actx = null;
 function initAudio() {
   if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
@@ -256,7 +252,7 @@ function beep(freq, dur, type = 'sine', vol = 0.05) {
   o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
 }
 
-/* ================= СОСТОЯНИЕ ================= */
+/* ===== СОСТОЯНИЕ ===== */
 const game = {
   state: 'menu', wood: 0, metal: 0, plastic: 0, fabric: 0, copper: 0, iron: 0, coal: 0, gold: 0, diamond: 0, core: 0,
   boatLevel: 1, isNight: false, zone: 'ocean', caveDepth: 1,
@@ -267,15 +263,19 @@ const game = {
 const player = {
   x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI/2, wakeTimer: 0,
   hp: 100, maxHp: 100, hunger: 100, maxHunger: 100, thirst: 100, maxThirst: 100,
-  isOnFoot: false, interactMode: 'none' 
+  isOnFoot: false, interactMode: 'none'
 };
 
 const inventory = { fish: 0, water: 0, seeds: 0, crops: 0, meat: 0 };
 const tools = { rod: 1, farm: 1, purifier: 1, turret: 0 };
 
 let fishing = { state: 'idle', timer: 0 };
-let purifyTimer = 0; let crops = [];
-let megalodon = null; let harpoons = []; let bossWarningTimer = 0;
+let purifyTimer = 0;
+let crops = [];
+let megalodon = null;
+let harpoons = [];
+let turretCooldown = 0;
+let bossWarningTimer = 0;
 
 const BOAT_LEVELS = [
   { name: "Плот", speed: 130, size: 18, costW: 0, costM: 0 },
@@ -285,23 +285,32 @@ const BOAT_LEVELS = [
   { name: "Мега-Яхта", speed: 280, size: 65, costW: 800, costM: 400 }
 ];
 
-let resources = []; let particles = []; let sharks = [];
-let buildings = []; let mobs = []; let caveOres = [];
-let island = { x: 2000, y: 2000, r: 900 };
-let caveEntrance = { x: 2000, y: 1400 }; 
-let boatDock = { x: 2000, y: 2800 }; 
-let elevator = { x: 0, y: -300, r: 40 }; // Лифт в пещере
+let resources = [];
+let particles = [];
+let sharks = [];
+let buildings = [];
+let mobs = [];
+let ores = []; // единый массив руд (для острова и пещер)
 
-let spawnTimer = 0; let sharkTimer = 0; let shake = 0;
+const island = { x: 2000, y: 2000, r: 900 };
+const caveEntrance = { x: 2000, y: 1400 };
+const boatDock = { x: 2000, y: 2800 };
+const elevatorPos = { x: 0, y: -400 };
+const exitPos = { x: 0, y: 400 };
+
+let spawnTimer = 0, sharkTimer = 0, shake = 0;
 const joystick = { active: false, id: null, bx: 0, by: 0, dx: 0, dy: 0 };
 const JOY_MAX = 55;
 const keys = { w: false, a: false, s: false, d: false };
 
 function showToast(text, color = '#a855f7') {
-  toastEl.textContent = text; toastEl.style.background = color; toastEl.style.opacity = 1;
+  toastEl.textContent = text;
+  toastEl.style.background = color;
+  toastEl.style.opacity = 1;
   game.toastTimer = 3;
 }
 
+/* ===== ВВОД ===== */
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   if (fishing.state === 'biting') {
@@ -337,37 +346,42 @@ canvas.addEventListener('touchcancel', endTouch, { passive: false });
 window.addEventListener('keydown', e => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
 window.addEventListener('keyup', e => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
 
+/* ===== СТАРТ ИГРЫ ===== */
 function startGame() {
   initAudio();
   game.wood = 0; game.metal = 0; game.plastic = 0; game.fabric = 0;
   game.copper = 0; game.iron = 0; game.coal = 0; game.gold = 0; game.diamond = 0; game.core = 0;
   game.boatLevel = 1; game.isNight = false; game.zone = 'ocean'; game.caveDepth = 1;
   game.blueprints = { gen: false, drill: false };
+  game.toastTimer = 0;
   tools.rod = 1; tools.farm = 1; tools.purifier = 1; tools.turret = 0;
   player.x = 0; player.y = 0; player.vx = 0; player.vy = 0; player.isOnFoot = false;
   player.hp = 100; player.hunger = 100; player.thirst = 100;
   inventory.fish = 0; inventory.water = 0; inventory.seeds = 0; inventory.crops = 0; inventory.meat = 0;
-  crops = []; megalodon = null; harpoons = []; buildings = []; mobs = []; caveOres = [];
+  crops = []; megalodon = null; harpoons = []; buildings = []; mobs = []; ores = [];
+  turretCooldown = 0;
   game.camera.x = 0; game.camera.y = 0; game.camera.zoom = 1; game.camera.targetZoom = 1;
   resources = []; particles = []; sharks = [];
   fishing.state = 'idle'; purifyTimer = 0; bossWarningTimer = 0; shake = 0;
-  bossBarContainer.style.display = 'none'; coreRow.style.display = 'none';
-  goldRow.style.display = 'none'; diamondRow.style.display = 'none';
+  bossBarContainer.style.display = 'none';
+  coreRow.style.display = 'none'; goldRow.style.display = 'none'; diamondRow.style.display = 'none';
   game.state = 'playing';
   overlay.classList.add('hidden');
   updateUI(); spawnResources(15);
 }
 
+/* ===== UI ===== */
 function updateUI() {
   uiWood.textContent = game.wood; uiMetal.textContent = game.metal;
   uiPlastic.textContent = game.plastic; uiFabric.textContent = game.fabric;
-  uiCopper.textContent = game.copper; uiIron.textContent = game.iron; uiCoal.textContent = game.coal; 
-  uiGold.textContent = game.gold; uiDiamond.textContent = game.diamond; uiCore.textContent = game.core;
+  uiCopper.textContent = game.copper; uiIron.textContent = game.iron;
+  uiCoal.textContent = game.coal; uiGold.textContent = game.gold; uiDiamond.textContent = game.diamond;
+  uiCore.textContent = game.core;
   invFish.textContent = inventory.fish; invWater.textContent = inventory.water; invMeat.textContent = inventory.meat;
 
-  if (game.core > 0) coreRow.style.display = 'flex';
-  if (game.gold > 0) goldRow.style.display = 'flex';
-  if (game.diamond > 0) diamondRow.style.display = 'flex';
+  if (game.core > 0) coreRow.style.display = 'block';
+  if (game.gold > 0) goldRow.style.display = 'block';
+  if (game.diamond > 0) diamondRow.style.display = 'block';
 
   hpBar.style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
   hungerBar.style.width = Math.max(0, (player.hunger / player.maxHunger) * 100) + '%';
@@ -378,30 +392,34 @@ function updateUI() {
     uiCost.textContent = `🪵 ${next.costW} | ⚙️ ${next.costM}`;
     upgradeBtn.disabled = !(game.wood >= next.costW && game.metal >= next.costM);
     upgradeBtn.style.display = 'flex';
-  } else { upgradeBtn.style.display = 'none'; }
+  } else {
+    upgradeBtn.style.display = 'none';
+  }
 
   fishBtn.disabled = fishing.state !== 'idle' || player.isOnFoot;
   purifyBtn.disabled = purifyTimer > 0 || player.isOnFoot;
-  plantBtn.disabled = !(inventory.seeds > 0 && game.boatLevel >= 2) || player.isOnFoot;
-  
+  plantBtn.disabled = !(inventory.seeds > 0 && game.boatLevel >= 2 && !player.isOnFoot);
+
   if (megalodon) {
     bossBarContainer.style.display = 'flex';
     bossHpBar.style.width = Math.max(0, (megalodon.hp / megalodon.maxHp) * 100) + '%';
-  } else { bossBarContainer.style.display = 'none'; }
+  } else {
+    bossBarContainer.style.display = 'none';
+  }
 
-  // Кнопка взаимодействия
   if (player.interactMode !== 'none') {
     interactBtn.style.display = 'block';
     if (player.interactMode === 'island') interactBtn.textContent = '🏝️ ВЫСАДИТЬСЯ';
-    if (player.interactMode === 'boat') interactBtn.textContent = '⚓ СЕСТЬ В ЛОДКУ';
-    if (player.interactMode === 'cave') interactBtn.textContent = '🕳️ ВОЙТИ В ПЕЩЕРУ';
-    if (player.interactMode === 'exitCave') interactBtn.textContent = '☀️ ВЫЙТИ ИЗ ПЕЩЕРЫ';
-    if (player.interactMode === 'elevator') interactBtn.textContent = `🛗 СПУСТИТЬСЯ НА УР. ${game.caveDepth + 1}`;
+    else if (player.interactMode === 'boat') interactBtn.textContent = '⚓ СЕСТЬ В ЛОДКУ';
+    else if (player.interactMode === 'cave') interactBtn.textContent = '🕳️ ВОЙТИ В ПЕЩЕРУ';
+    else if (player.interactMode === 'exitCave') interactBtn.textContent = '☀️ ВЫЙТИ ИЗ ПЕЩЕРЫ';
+    else if (player.interactMode === 'elevator') interactBtn.textContent = `🛗 СПУСТИТЬСЯ НА УР. ${game.caveDepth + 1}`;
   } else {
     interactBtn.style.display = 'none';
   }
 }
 
+/* ===== АПГРЕЙД ЛОДКИ ===== */
 function upgradeBoat() {
   if (game.boatLevel >= BOAT_LEVELS.length || player.isOnFoot) return;
   const next = BOAT_LEVELS[game.boatLevel];
@@ -411,15 +429,17 @@ function upgradeBoat() {
     game.camera.targetZoom = Math.max(0.5, 1 - (game.boatLevel * 0.1));
     beep(400, 0.1, 'square', 0.08);
     for(let i=0; i<30; i++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*200, vy: (Math.random()-0.5)*200, life: 1, maxLife: 1, size: Math.random()*4+2, color: '#fbbf24' });
-    
+
     if (game.boatLevel === 5 && !game.isNight) {
       game.isNight = true; bossWarningTimer = 5;
-      beep(200, 1.0, 'sawtooth', 0.1); setTimeout(() => beep(150, 1.5, 'sawtooth', 0.1), 500);
+      beep(200, 1.0, 'sawtooth', 0.1);
+      setTimeout(() => beep(150, 1.5, 'sawtooth', 0.1), 500);
     }
     updateUI();
   }
 }
 
+/* ===== СПАВН ===== */
 function spawnMegalodon() {
   const angle = Math.random() * Math.PI * 2;
   megalodon = {
@@ -440,7 +460,6 @@ function spawnResources(n) {
     else if (r > 0.6 && r <= 0.75) type = 'metal';
     else if (r > 0.75 && r <= 0.85) type = 'fabric';
     else if (r > 0.85) type = 'seed';
-
     resources.push({
       x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist,
       type: type, r: type === 'metal' ? 14 : 16, rotation: Math.random() * Math.PI, rotSpeed: (Math.random() - 0.5) * 2
@@ -458,37 +477,54 @@ function spawnShark() {
   });
 }
 
-function generateCaveOres(depth) {
-  caveOres = []; // Очищаем старые
-  for(let i=0; i<15; i++) {
+function generateIslandOres() {
+  ores = [];
+  for (let i = 0; i < 12; i++) {
     const angle = Math.random() * Math.PI * 2;
-    const dist = 100 + Math.random() * 600;
-    let type = 'copper';
-    if (depth === 1) type = Math.random() > 0.3 ? 'coal' : 'copper';
-    else if (depth === 2) type = Math.random() > 0.4 ? 'iron' : 'gold';
-    else if (depth === 3) type = Math.random() > 0.6 ? 'diamond' : 'gold';
-    
-    caveOres.push({ x: Math.cos(angle)*dist, y: Math.sin(angle)*dist, type: type, hp: 3 });
+    const dist = 100 + Math.random() * (island.r * 0.7);
+    ores.push({
+      x: island.x + Math.cos(angle) * dist,
+      y: island.y + Math.sin(angle) * dist,
+      type: Math.random() > 0.5 ? 'copper' : 'iron',
+      hp: 3
+    });
   }
 }
 
+function generateCaveOres(depth) {
+  ores = [];
+  for (let i = 0; i < 18; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 100 + Math.random() * 500;
+    let type = 'coal';
+    if (depth === 1) type = Math.random() > 0.4 ? 'coal' : 'copper';
+    else if (depth === 2) type = Math.random() > 0.4 ? 'iron' : 'gold';
+    else if (depth === 3) type = Math.random() > 0.5 ? 'diamond' : 'gold';
+    ores.push({ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, type: type, hp: 3 });
+  }
+}
+
+/* ===== ОСНОВНОЙ UPDATE ===== */
 function update(dt) {
   if (game.state !== 'playing') return;
   game.time += dt;
   if (shake > 0) shake = Math.max(0, shake - dt * 60);
   if (game.toastTimer > 0) { game.toastTimer -= dt; if (game.toastTimer <= 0) toastEl.style.opacity = 0; }
 
+  // Предупреждение о боссе
   if (bossWarningTimer > 0) {
     bossWarningTimer -= dt;
     if (bossWarningTimer <= 0 && !megalodon) spawnMegalodon();
   }
 
+  // Голод/жажда
   player.hunger -= 0.3 * dt; player.thirst -= 0.5 * dt;
   if (player.hunger <= 0 || player.thirst <= 0) player.hp -= 3 * dt;
 
-  if (player.hunger < 50 && inventory.meat > 0) { inventory.meat--; player.hunger += 50; updateUI(); beep(600, 0.1, 'sine'); }
-  else if (player.hunger < 50 && inventory.fish > 0) { inventory.fish--; player.hunger += 30; updateUI(); beep(600, 0.1, 'sine'); }
-  if (player.thirst < 50 && inventory.water > 0) { inventory.water--; player.thirst += 40; updateUI(); beep(800, 0.1, 'sine'); }
+  if (player.hunger < 50 && inventory.meat > 0) { inventory.meat--; player.hunger += 50; beep(600, 0.1, 'sine'); }
+  else if (player.hunger < 50 && inventory.fish > 0) { inventory.fish--; player.hunger += 30; beep(600, 0.1, 'sine'); }
+  else if (player.hunger < 50 && inventory.crops > 0) { inventory.crops--; player.hunger += 40; beep(600, 0.1, 'sine'); }
+  if (player.thirst < 50 && inventory.water > 0) { inventory.water--; player.thirst += 40; beep(800, 0.1, 'sine'); }
 
   player.hunger = Math.max(0, Math.min(100, player.hunger));
   player.thirst = Math.max(0, Math.min(100, player.thirst));
@@ -502,25 +538,49 @@ function update(dt) {
     return;
   }
 
-  // --- Зоны и Взаимодействия ---
+  // Рыбалка
+  if (fishing.state === 'casting') {
+    fishing.timer -= dt;
+    if (fishing.timer <= 0) { fishing.state = 'waiting'; fishing.timer = Math.max(1, 4 - tools.rod) + Math.random() * 2; }
+  } else if (fishing.state === 'waiting') {
+    fishing.timer -= dt;
+    if (fishing.timer <= 0) { fishing.state = 'biting'; fishing.timer = 1.5 + (tools.rod * 0.3); beep(900, 0.2, 'square', 0.08); }
+  } else if (fishing.state === 'biting') {
+    fishing.timer -= dt;
+    if (fishing.timer <= 0) { fishing.state = 'idle'; }
+  }
+
+  // Опреснение
+  if (purifyTimer > 0) {
+    purifyTimer -= dt;
+    if (purifyTimer <= 0) { inventory.water++; beep(1000, 0.2, 'sine'); }
+  }
+
+  // Рост урожая
+  for (let i = crops.length - 1; i >= 0; i--) {
+    crops[i].progress += dt * (0.08 + (tools.farm * 0.03));
+    if (crops[i].progress >= 1) { inventory.crops++; crops.splice(i, 1); beep(700, 0.2, 'sine', 0.08); }
+  }
+
+  // Зоны взаимодействия
   if (game.zone === 'ocean' && !player.isOnFoot) {
-    const distToIsland = Math.hypot(player.x - island.x, player.y - island.y);
-    if (distToIsland < island.r + 50) player.interactMode = 'island';
-    else player.interactMode = 'none';
+    const d = Math.hypot(player.x - island.x, player.y - island.y);
+    player.interactMode = (d < island.r + 50) ? 'island' : 'none';
   } else if (game.zone === 'island' && player.isOnFoot) {
-    const distToCave = Math.hypot(player.x - caveEntrance.x, player.y - caveEntrance.y);
-    const distToBoat = Math.hypot(player.x - boatDock.x, player.y - boatDock.y);
-    if (distToCave < 100) player.interactMode = 'cave';
-    else if (distToBoat < 150) player.interactMode = 'boat';
+    const dCave = Math.hypot(player.x - caveEntrance.x, player.y - caveEntrance.y);
+    const dBoat = Math.hypot(player.x - boatDock.x, player.y - boatDock.y);
+    if (dCave < 100) player.interactMode = 'cave';
+    else if (dBoat < 150) player.interactMode = 'boat';
     else player.interactMode = 'none';
   } else if (game.zone === 'cave') {
-    const distToElevator = Math.hypot(player.x - elevator.x, player.y - elevator.y);
-    if (distToElevator < 80 && game.caveDepth < 3) player.interactMode = 'elevator';
-    else if (Math.hypot(player.x, player.y) < 100) player.interactMode = 'exitCave'; // Условный выход
+    const dElev = Math.hypot(player.x - elevatorPos.x, player.y - elevatorPos.y);
+    const dExit = Math.hypot(player.x - exitPos.x, player.y - exitPos.y);
+    if (dElev < 90 && game.caveDepth < 3) player.interactMode = 'elevator';
+    else if (dExit < 80) player.interactMode = 'exitCave';
     else player.interactMode = 'none';
   }
 
-  // --- Движение ---
+  // Движение
   const level = BOAT_LEVELS[game.boatLevel - 1];
   let speed = player.isOnFoot ? 150 : level.speed;
 
@@ -531,86 +591,252 @@ function update(dt) {
   const mag = Math.hypot(mx, my);
   if (mag > 1) { mx /= mag; my /= mag; }
   if (mag > 0.1) { player.vx += mx * speed * 3 * dt; player.vy += my * speed * 3 * dt; player.angle = Math.atan2(my, mx); }
-  
+
   player.vx *= 0.9; player.vy *= 0.9;
   const pSpeed = Math.hypot(player.vx, player.vy);
   if (pSpeed > speed) { player.vx = (player.vx / pSpeed) * speed; player.vy = (player.vy / pSpeed) * speed; }
-  
+
   player.x += player.vx * dt; player.y += player.vy * dt;
   game.camera.x = player.x; game.camera.y = player.y;
 
-  // --- Логика по зонам ---
-  if (game.zone === 'ocean') {
+  // Пенный след за лодкой
+  if (pSpeed > 20 && !player.isOnFoot) {
+    player.wakeTimer -= dt;
+    if (player.wakeTimer <= 0) {
+      player.wakeTimer = 0.05;
+      particles.push({
+        x: player.x - Math.cos(player.angle)*level.size*0.5,
+        y: player.y - Math.sin(player.angle)*level.size*0.5,
+        vx: (Math.random()-0.5)*30 - player.vx*0.2,
+        vy: (Math.random()-0.5)*30 - player.vy*0.2,
+        life: 1.5, maxLife: 1.5, size: Math.random()*8+4, color: 'rgba(255,255,255,0.6)'
+      });
+    }
+  }
+
+  /* ===== ОКЕАН ===== */
+  if (game.zone === 'ocean' && !player.isOnFoot) {
     spawnTimer -= dt;
     if (spawnTimer <= 0) { spawnTimer = 1.5; if (resources.length < 30) spawnResources(2); }
+
     if (!game.isNight) {
       sharkTimer -= dt;
-      if (sharkTimer <= 0) { sharkTimer = 10; if (sharks.length < 2 && !player.isOnFoot) spawnShark(); }
+      if (sharkTimer <= 0) { sharkTimer = 10; if (sharks.length < 2) spawnShark(); }
     }
-  } else if (game.zone === 'island') {
+
+    // 🟢 СБОР РЕСУРСОВ — КРИТИЧЕСКАЯ ЧАСТЬ
+    for (let i = resources.length - 1; i >= 0; i--) {
+      const res = resources[i];
+      res.rotation += res.rotSpeed * dt;
+      const dx = player.x - res.x; const dy = player.y - res.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < level.size + 60 && dist > 0.1) {
+        res.x += (dx / dist) * 300 * dt;
+        res.y += (dy / dist) * 300 * dt;
+      }
+      if (dist < level.size + res.r) {
+        if (res.type === 'wood') { game.wood += 5; beep(300, 0.08, 'triangle', 0.05); }
+        else if (res.type === 'metal') { game.metal += 3; beep(500, 0.08, 'square', 0.04); }
+        else if (res.type === 'plastic') { game.plastic += 4; beep(400, 0.08, 'sine', 0.04); }
+        else if (res.type === 'fabric') { game.fabric += 2; beep(350, 0.08, 'triangle', 0.04); }
+        else if (res.type === 'seed') { inventory.seeds++; beep(600, 0.1, 'sine', 0.05); }
+        resources.splice(i, 1);
+        spawnResources(1);
+      }
+    }
+
+    // Акулы
+    for (let i = sharks.length - 1; i >= 0; i--) {
+      const sh = sharks[i];
+      const dx = player.x - sh.x; const dy = player.y - sh.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 800) {
+        sh.angle = Math.atan2(dy, dx);
+        sh.x += Math.cos(sh.angle) * sh.speed * dt;
+        sh.y += Math.sin(sh.angle) * sh.speed * dt;
+        if (dist < level.size + 15 && sh.biteCooldown <= 0) {
+          sh.biteCooldown = 2; beep(100, 0.2, 'sawtooth', 0.1);
+          player.hp -= 15;
+          sh.x -= Math.cos(sh.angle) * 100; sh.y -= Math.sin(sh.angle) * 100;
+          shake = Math.min(15, shake + 8);
+          for(let j=0; j<10; j++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*100, vy: (Math.random()-0.5)*100, life: 0.5, maxLife: 0.5, size: 3, color: '#ef4444' });
+        }
+      }
+      if (sh.biteCooldown > 0) sh.biteCooldown -= dt;
+      if (dist > 1500) sharks.splice(i, 1);
+    }
+
+    // Турель стреляет гарпунами
+    if (tools.turret > 0 && megalodon && megalodon.hp > 0) {
+      turretCooldown -= dt;
+      if (turretCooldown <= 0) {
+        turretCooldown = Math.max(0.3, 2.0 - (tools.turret * 0.4));
+        const dx = megalodon.x - player.x; const dy = megalodon.y - player.y;
+        const angle = Math.atan2(dy, dx);
+        harpoons.push({
+          x: player.x + Math.cos(angle) * level.size,
+          y: player.y + Math.sin(angle) * level.size,
+          vx: Math.cos(angle) * 800, vy: Math.sin(angle) * 800,
+          life: 2, dmg: 30 + (tools.turret * 25), angle: angle
+        });
+        beep(400, 0.1, 'square', 0.06);
+      }
+    }
+
+    // Обновление гарпунов
+    for (let i = harpoons.length - 1; i >= 0; i--) {
+      const h = harpoons[i];
+      h.x += h.vx * dt; h.y += h.vy * dt; h.life -= dt;
+      if (megalodon && megalodon.hp > 0) {
+        const dx = megalodon.x - h.x; const dy = megalodon.y - h.y;
+        if (Math.hypot(dx, dy) < megalodon.r + 10) {
+          megalodon.hp -= h.dmg;
+          megalodon.hitFlash = 0.2;
+          harpoons.splice(i, 1);
+          beep(200, 0.1, 'sawtooth', 0.05);
+          for(let j=0; j<5; j++) particles.push({ x: h.x, y: h.y, vx: (Math.random()-0.5)*150, vy: (Math.random()-0.5)*150, life: 0.5, maxLife: 0.5, size: 3, color: '#ef4444' });
+          continue;
+        }
+      }
+      if (h.life <= 0) harpoons.splice(i, 1);
+    }
+
+    // Мегалодон — State Machine
+    if (megalodon) {
+      if (megalodon.hitFlash > 0) megalodon.hitFlash -= dt;
+      const dx = player.x - megalodon.x; const dy = player.y - megalodon.y;
+      const dist = Math.hypot(dx, dy);
+      megalodon.stateTimer -= dt;
+
+      if (megalodon.state === 'circling') {
+        const targetAngle = Math.atan2(dy, dx) - Math.PI / 2;
+        megalodon.angle = targetAngle;
+        megalodon.x += Math.cos(targetAngle) * megalodon.speed * dt;
+        megalodon.y += Math.sin(targetAngle) * megalodon.speed * dt;
+        if (dist > 400) {
+          megalodon.x += (dx / dist) * megalodon.speed * dt;
+          megalodon.y += (dy / dist) * megalodon.speed * dt;
+        }
+        if (megalodon.stateTimer <= 0) {
+          megalodon.state = 'charging'; megalodon.stateTimer = 1.5;
+          beep(100, 0.5, 'sawtooth', 0.1);
+        }
+      } else if (megalodon.state === 'charging') {
+        if (megalodon.stateTimer <= 0.5) {
+          megalodon.angle = Math.atan2(dy, dx);
+          megalodon.x += Math.cos(megalodon.angle) * megalodon.speed * 4 * dt;
+          megalodon.y += Math.sin(megalodon.angle) * megalodon.speed * 4 * dt;
+          if (dist < megalodon.r + level.size) {
+            player.hp -= 35;
+            megalodon.state = 'stunned'; megalodon.stateTimer = 2.5;
+            beep(60, 0.4, 'sawtooth', 0.2);
+            shake = 25;
+            for(let j=0; j<20; j++) particles.push({ x: player.x, y: player.y, vx: (Math.random()-0.5)*300, vy: (Math.random()-0.5)*300, life: 1, maxLife: 1, size: 5, color: '#ef4444' });
+          }
+        }
+      } else if (megalodon.state === 'stunned') {
+        if (megalodon.stateTimer <= 0) { megalodon.state = 'circling'; megalodon.stateTimer = 4; }
+      }
+
+      // Смерть Мегалодона
+      if (megalodon.hp <= 0) {
+        megalodon = null;
+        bossBarContainer.style.display = 'none';
+        game.isNight = false;
+        game.core += 1;
+        game.blueprints.gen = true;
+        game.wood += 300; game.metal += 200; game.plastic += 150; game.fabric += 100;
+        showToast('🔮 Энергоядро и 📜 Чертеж Генератора получены!', '#a855f7');
+        beep(600, 0.5, 'sine', 0.1);
+        setTimeout(() => beep(800, 0.5, 'sine', 0.1), 300);
+        setTimeout(() => beep(1000, 0.5, 'sine', 0.1), 600);
+      }
+    }
+  }
+
+  /* ===== ОСТРОВ ===== */
+  else if (game.zone === 'island') {
     if (mobs.length < 5 && Math.random() < dt * 0.5) {
       const angle = Math.random() * Math.PI * 2;
       const dist = 300 + Math.random() * 200;
-      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'boar', hp: 30, speed: 60 });
+      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'boar', hp: 30, speed: 60, damage: 20 });
     }
-  } else if (game.zone === 'cave') {
-    // В пещере мобы спавнятся в зависимости от глубины
-    const spawnRate = 0.5 + (game.caveDepth * 0.5);
-    if (mobs.length < 8 + game.caveDepth*2 && Math.random() < dt * spawnRate) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 400 + Math.random() * 200;
-      const hp = 15 + (game.caveDepth * 10);
-      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'bat', hp: hp, speed: 100 + game.caveDepth*20 });
-    }
-
-    // Добыча руды
-    for (let i = caveOres.length - 1; i >= 0; i--) {
-      const ore = caveOres[i];
-      if (Math.hypot(player.x - ore.x, player.y - ore.y) < 40) {
-        ore.hp -= dt * 2; 
-        if (Math.random() < dt * 10) beep(300, 0.05, 'square', 0.02);
+    // Добыча поверхностных руд
+    for (let i = ores.length - 1; i >= 0; i--) {
+      const ore = ores[i];
+      if (Math.hypot(player.x - ore.x, player.y - ore.y) < 45) {
+        ore.hp -= dt * 2;
+        if (Math.random() < dt * 8) beep(300, 0.05, 'square', 0.02);
         if (ore.hp <= 0) {
           if (ore.type === 'copper') game.copper += 5;
-          if (ore.type === 'coal') game.coal += 5;
-          if (ore.type === 'iron') game.iron += 4;
-          if (ore.type === 'gold') game.gold += 3;
-          if (ore.type === 'diamond') game.diamond += 1;
-          
-          // Шанс найти чертеж бура на 1 глубине
-          if (game.caveDepth === 1 && !game.blueprints.drill && Math.random() < 0.2) {
-            game.blueprints.drill = true;
-            showToast('📜 НАЙДЕН ЧЕРТЕЖ: Электробур!', '#fbbf24');
-          }
-          
-          caveOres.splice(i, 1); updateUI();
+          else if (ore.type === 'iron') game.iron += 4;
+          ores.splice(i, 1);
           beep(800, 0.1, 'sine');
         }
       }
     }
   }
 
-  // Мобы
+  /* ===== ПЕЩЕРА ===== */
+  else if (game.zone === 'cave') {
+    const spawnRate = 0.5 + (game.caveDepth * 0.5);
+    if (mobs.length < 8 + game.caveDepth * 2 && Math.random() < dt * spawnRate) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 400 + Math.random() * 200;
+      const hp = 15 + (game.caveDepth * 10);
+      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'bat', hp: hp, speed: 100 + game.caveDepth*20, damage: 8 + game.caveDepth*3 });
+    }
+    // Добыча руды в пещере
+    for (let i = ores.length - 1; i >= 0; i--) {
+      const ore = ores[i];
+      if (Math.hypot(player.x - ore.x, player.y - ore.y) < 45) {
+        ore.hp -= dt * 2;
+        if (Math.random() < dt * 8) beep(300, 0.05, 'square', 0.02);
+        if (ore.hp <= 0) {
+          if (ore.type === 'copper') game.copper += 5;
+          else if (ore.type === 'coal') game.coal += 5;
+          else if (ore.type === 'iron') game.iron += 4;
+          else if (ore.type === 'gold') game.gold += 3;
+          else if (ore.type === 'diamond') game.diamond += 1;
+
+          // Шанс чертежа бура на глубине 1
+          if (game.caveDepth === 1 && !game.blueprints.drill && Math.random() < 0.2) {
+            game.blueprints.drill = true;
+            showToast('📜 НАЙДЕН ЧЕРТЕЖ: Электробур!', '#fbbf24');
+          }
+
+          ores.splice(i, 1);
+          beep(800, 0.1, 'sine');
+        }
+      }
+    }
+  }
+
+  // Мобы (общая логика)
   for (let i = mobs.length - 1; i >= 0; i--) {
     const m = mobs[i];
-    const dx = player.x - m.x; const dy = player.y - m.y; const dist = Math.hypot(dx, dy);
+    const dx = player.x - m.x; const dy = player.y - m.y;
+    const dist = Math.hypot(dx, dy);
     if (dist < 500) {
-      m.x += (dx/dist) * m.speed * dt; m.y += (dy/dist) * m.speed * dt;
+      m.x += (dx/dist) * m.speed * dt;
+      m.y += (dy/dist) * m.speed * dt;
       if (dist < 30) {
-        player.hp -= (m.type === 'boar' ? 20 : 10 + game.caveDepth*5) * dt;
+        player.hp -= m.damage * dt;
         shake = Math.min(10, shake + dt * 20);
+        if (Math.random() < dt * 2) beep(100, 0.1, 'sawtooth', 0.05);
       }
     }
     if (dist > 800) mobs.splice(i, 1);
   }
 
-  // Электричество и постройки (с заправкой углем)
+  // Электричество: генератор + бур
   for (const b of buildings) {
     if (b.type === 'drill') {
-      let isPowered = false;
+      let powered = false;
       for (const gen of buildings) {
-        if (gen.type === 'gen' && Math.hypot(b.x - gen.x, b.y - gen.y) < 250) { isPowered = true; break; }
+        if (gen.type === 'gen' && Math.hypot(b.x - gen.x, b.y - gen.y) < 250) { powered = true; break; }
       }
-      if (isPowered) {
+      if (powered) {
         if (b.fuel > 0) {
           b.timer -= dt;
           if (b.timer <= 0) {
@@ -620,24 +846,30 @@ function update(dt) {
             else if (r < 0.6) game.iron += 2;
             else if (r < 0.8) game.gold += 1;
             else game.diamond += 1;
-            updateUI(); beep(400, 0.05, 'sine', 0.02);
+            beep(400, 0.05, 'sine', 0.02);
           }
         } else {
-          // Заправка углем (автоматически)
           if (game.coal > 0) {
-            game.coal -= 1; b.fuel = 5; updateUI(); beep(300, 0.1, 'triangle');
+            game.coal -= 1; b.fuel = 5; beep(300, 0.1, 'triangle', 0.03);
           } else {
-            b.timer = 2; // Пауза, если нет угля
+            b.timer = 2;
           }
         }
       }
     }
   }
 
+  // Частицы
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const pt = particles[i];
+    pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
+    if (pt.life <= 0) particles.splice(i, 1);
+  }
+
   updateUI();
 }
 
-/* ================= КРАФТ И СТРОИТЕЛЬСТВО ================= */
+/* ===== КРАФТ И СТРОИТЕЛЬСТВО ===== */
 const CRAFT_RECIPES = [
   { id: 'rod', name: '🎣 Удочка', maxLvl: 3, desc: 'Ускоряет клев.', costs: [ {w:30, f:10, p:5}, {w:80, f:30, m:20, p:15} ] },
   { id: 'farm', name: '🌱 Грядка', maxLvl: 3, desc: 'Ускоряет рост урожая.', costs: [ {w:40, p:20}, {w:100, p:50, m:20} ] },
@@ -653,7 +885,7 @@ const BUILD_RECIPES = [
 function openCraftMenu() {
   game.state = 'paused';
   let html = `<h1 class="title" style="color:#8b5cf6">🛠️ ВЕРСТАК</h1><p class="subtitle">Крафт и механизмы</p><div class="craft-list">`;
-  
+
   CRAFT_RECIPES.forEach(r => {
     const lvl = tools[r.id]; const isMax = lvl >= r.maxLvl; const cost = isMax ? null : r.costs[lvl - 1];
     let canAfford = false;
@@ -671,7 +903,6 @@ function openCraftMenu() {
     BUILD_RECIPES.forEach(r => {
       const hasBp = game.blueprints[r.reqBp];
       let canAfford = (game.core >= (r.costs[0].core||0)) && (game.iron >= (r.costs[0].iron||0)) && (game.copper >= (r.costs[0].copper||0)) && (game.metal >= (r.costs[0].m||0));
-      
       html += `<div class="craft-item" style="opacity: ${hasBp ? 1 : 0.6}">
         <div class="craft-title"><span>${r.name}</span> ${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}</div>
         <div class="craft-desc">${r.desc}</div>
@@ -701,35 +932,48 @@ window.buildItem = function(id) {
   if ((game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0))) {
     if (game.core > 0) game.core -= (c.core||0);
     game.iron -= (c.iron||0); game.copper -= (c.copper||0); game.metal -= (c.m||0);
-    
-    const bx = player.x + Math.cos(player.angle) * 60;
-    const by = player.y + Math.sin(player.angle) * 60;
-    
-    let fuel = id === 'drill' ? 0 : undefined; // Бур создается пустым
-    buildings.push({ x: bx, y: by, type: id, timer: 0, fuel: fuel });
-    
+    const bx = player.x + Math.cos(player.angle) * 70;
+    const by = player.y + Math.sin(player.angle) * 70;
+    buildings.push({ x: bx, y: by, type: id, timer: 0, fuel: id === 'drill' ? 0 : undefined });
     beep(500, 0.2, 'sine', 0.1); openCraftMenu(); updateUI();
   }
 };
 
 window.closeCraftMenu = function() { game.state = 'playing'; overlay.classList.add('hidden'); };
 
-/* ================= ОБРАБОТЧИКИ КНОПОК ================= */
+/* ===== ОБРАБОТЧИКИ КНОПОК ===== */
 interactBtn.addEventListener('click', () => {
   if (player.interactMode === 'island') {
-    player.isOnFoot = true; player.x = boatDock.x; player.y = boatDock.y;
-    game.zone = 'island'; beep(300, 0.2, 'sine');
+    player.isOnFoot = true;
+    player.x = boatDock.x; player.y = boatDock.y - 80;
+    game.zone = 'island';
+    if (ores.length === 0) generateIslandOres();
+    mobs = [];
+    beep(300, 0.2, 'sine');
   } else if (player.interactMode === 'boat') {
-    player.isOnFoot = false; game.zone = 'ocean'; beep(400, 0.2, 'sine');
+    player.isOnFoot = false;
+    player.x = boatDock.x; player.y = boatDock.y - 200;
+    game.zone = 'ocean';
+    mobs = []; sharks = [];
+    beep(400, 0.2, 'sine');
   } else if (player.interactMode === 'cave') {
-    game.zone = 'cave'; game.caveDepth = 1; player.x = 0; player.y = 100;
-    generateCaveOres(1); beep(150, 0.5, 'sawtooth');
+    game.zone = 'cave'; game.caveDepth = 1;
+    player.x = exitPos.x; player.y = exitPos.y;
+    generateCaveOres(1);
+    mobs = [];
+    beep(150, 0.5, 'sawtooth');
   } else if (player.interactMode === 'elevator') {
-    game.caveDepth++; generateCaveOres(game.caveDepth);
-    player.x = 0; player.y = 100;
-    beep(200, 0.5, 'sawtooth'); showToast(`Спуск на глубину ${game.caveDepth}`, '#38bdf8');
+    game.caveDepth++;
+    generateCaveOres(game.caveDepth);
+    player.x = exitPos.x; player.y = exitPos.y;
+    mobs = [];
+    beep(200, 0.5, 'sawtooth');
+    showToast(`Спуск на глубину ${game.caveDepth}`, '#38bdf8');
   } else if (player.interactMode === 'exitCave') {
-    game.zone = 'island'; player.x = caveEntrance.x; player.y = caveEntrance.y + 50;
+    game.zone = 'island';
+    player.x = caveEntrance.x; player.y = caveEntrance.y + 80;
+    mobs = [];
+    if (ores.length === 0) generateIslandOres();
     beep(300, 0.2, 'sine');
   }
 });
@@ -739,6 +983,7 @@ craftBtn.addEventListener('click', openCraftMenu);
 fishBtn.addEventListener('click', () => { if (fishing.state === 'idle' && !player.isOnFoot) { fishing.state = 'casting'; fishing.timer = 0.5; beep(300, 0.1, 'sine'); updateUI(); } });
 purifyBtn.addEventListener('click', () => { if (purifyTimer <= 0 && !player.isOnFoot) { purifyTimer = Math.max(1, 4.5 - tools.purifier); beep(500, 0.1, 'sawtooth'); updateUI(); } });
 plantBtn.addEventListener('click', () => { if (inventory.seeds > 0 && game.boatLevel >= 2 && !player.isOnFoot) { inventory.seeds--; crops.push({ progress: 0 }); beep(400, 0.1, 'triangle'); updateUI(); } });
+
 pauseBtn.addEventListener('click', () => {
   if (game.state === 'playing') {
     game.state = 'paused';
@@ -750,19 +995,22 @@ pauseBtn.addEventListener('click', () => {
 });
 document.addEventListener('contextmenu', e => e.preventDefault());
 
-/* ================= ОТРИСОВКА ================= */
-function drawOcean() {
-  let bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  if (game.isNight) { bgGrad.addColorStop(0, '#020617'); bgGrad.addColorStop(1, '#0f172a'); } 
+/* ===== ОТРИСОВКА ===== */
+function drawOceanBg() {
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  if (game.isNight) { bgGrad.addColorStop(0, '#020617'); bgGrad.addColorStop(1, '#0f172a'); }
   else { bgGrad.addColorStop(0, '#0f172a'); bgGrad.addColorStop(1, '#0c4a6e'); }
   ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
-  
-  const gridSize = 120; const offsetX = (game.camera.x * game.camera.zoom) % gridSize; const offsetY = (game.camera.y * game.camera.zoom) % gridSize;
+
+  const gridSize = 120;
+  const offsetX = (game.camera.x * game.camera.zoom) % gridSize;
+  const offsetY = (game.camera.y * game.camera.zoom) % gridSize;
   ctx.lineWidth = 2;
-  for(let layer = 0; layer < 2; layer++) {
+  for (let layer = 0; layer < 2; layer++) {
     ctx.strokeStyle = game.isNight ? `rgba(56, 189, 248, ${0.05 - layer*0.02})` : `rgba(255, 255, 255, ${0.1 - layer*0.04})`;
     ctx.beginPath();
-    const speed = layer === 0 ? 1 : -1.5; const spacing = gridSize + layer * 30;
+    const speed = layer === 0 ? 1 : -1.5;
+    const spacing = gridSize + layer * 30;
     for (let x = -spacing; x < W + spacing; x += spacing) {
       ctx.moveTo(x - offsetX * speed, 0);
       for (let y = 0; y < H; y += 20) ctx.lineTo(x - offsetX * speed + Math.sin(y*0.02 + game.time*1.5)*15, y);
@@ -779,18 +1027,117 @@ function drawIsland() {
   ctx.fillStyle = '#fcd34d'; ctx.beginPath(); ctx.arc(island.x, island.y, island.r, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(island.x, island.y, island.r * 0.85, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#16a34a';
-  for(let i=0; i<20; i++) { ctx.beginPath(); ctx.arc(island.x + Math.cos(i)*300, island.y + Math.sin(i)*300, 40, 0, Math.PI*2); ctx.fill(); }
-  
+  for (let i = 0; i < 20; i++) { ctx.beginPath(); ctx.arc(island.x + Math.cos(i*1.7)*300, island.y + Math.sin(i*1.7)*300, 40, 0, Math.PI*2); ctx.fill(); }
+
   ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(caveEntrance.x, caveEntrance.y, 50, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(caveEntrance.x, caveEntrance.y, 30, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🕳️', caveEntrance.x, caveEntrance.y+7);
-  
+
   ctx.fillStyle = '#78350f'; ctx.fillRect(boatDock.x - 50, boatDock.y - 20, 100, 40);
   ctx.strokeStyle = '#451a03'; ctx.lineWidth = 2; ctx.strokeRect(boatDock.x - 50, boatDock.y - 20, 100, 40);
 }
 
+function drawBoat() {
+  const level = BOAT_LEVELS[game.boatLevel - 1];
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.rotate(player.angle + Math.PI/2);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.beginPath(); ctx.ellipse(5, 5, level.size * 0.9, level.size * 1.5, 0, 0, Math.PI*2); ctx.fill();
+
+  if (game.boatLevel === 1) {
+    for (let i = -1; i <= 1; i++) {
+      ctx.fillStyle = i === 0 ? '#78350f' : '#92400e';
+      ctx.beginPath(); ctx.roundRect(i*12 - 6, -level.size*1.5, 12, level.size*3, 4); ctx.fill();
+      ctx.strokeStyle = '#451a03'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-18, -10); ctx.lineTo(18, -10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-18, 10); ctx.lineTo(18, 10); ctx.stroke();
+  } else if (game.boatLevel === 2) {
+    const grad = ctx.createLinearGradient(0, -level.size*1.5, 0, level.size*1.2);
+    grad.addColorStop(0, '#b45309'); grad.addColorStop(1, '#78350f');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -level.size*1.6);
+    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
+    ctx.lineTo(-level.size*0.8, level.size*1.2);
+    ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
+    ctx.fill(); ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(-level.size*0.6, -5, level.size*1.2, 6);
+    ctx.fillRect(-level.size*0.6, 15, level.size*1.2, 6);
+  } else if (game.boatLevel === 3) {
+    const grad = ctx.createLinearGradient(0, -level.size*1.5, 0, level.size*1.2);
+    grad.addColorStop(0, '#334155'); grad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -level.size*1.6);
+    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
+    ctx.lineTo(-level.size*0.8, level.size*1.2);
+    ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
+    ctx.fill(); ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.roundRect(-level.size*0.5, -level.size*0.5, level.size, level.size*0.8, 5); ctx.fill();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.6)'; ctx.beginPath(); ctx.roundRect(-level.size*0.4, -level.size*0.4, level.size*0.8, level.size*0.3, 3); ctx.fill();
+    ctx.fillStyle = '#475569'; ctx.fillRect(-level.size*0.3, level.size*1.2, level.size*0.6, level.size*0.3);
+  } else if (game.boatLevel === 4) {
+    const grad = ctx.createLinearGradient(0, -level.size*1.5, 0, level.size*1.2);
+    grad.addColorStop(0, '#f8fafc'); grad.addColorStop(1, '#cbd5e1');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -level.size*1.6);
+    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
+    ctx.lineTo(-level.size*0.8, level.size*1.2);
+    ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
+    ctx.fill(); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(-level.size*0.7, level.size*0.8); ctx.lineTo(level.size*0.7, level.size*0.8); ctx.stroke();
+    ctx.fillStyle = '#e2e8f0'; ctx.beginPath(); ctx.roundRect(-level.size*0.6, -level.size*0.8, level.size*1.2, level.size*0.8, 8); ctx.fill();
+    ctx.fillStyle = '#0ea5e9';
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(i*level.size*0.3, -level.size*0.4, level.size*0.1, 0, Math.PI*2); ctx.fill(); }
+  } else if (game.boatLevel === 5) {
+    const grad = ctx.createLinearGradient(0, -level.size*1.5, 0, level.size*1.2);
+    grad.addColorStop(0, '#ffffff'); grad.addColorStop(1, '#94a3b8');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -level.size*1.8);
+    ctx.quadraticCurveTo(level.size*1.1, -level.size*0.5, level.size*0.9, level.size*1.2);
+    ctx.lineTo(-level.size*0.9, level.size*1.2);
+    ctx.quadraticCurveTo(-level.size*1.1, -level.size*0.5, 0, -level.size*1.8);
+    ctx.fill(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#f1f5f9'; ctx.beginPath(); ctx.roundRect(-level.size*0.7, -level.size*1.2, level.size*1.4, level.size*0.8, 10); ctx.fill();
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.9)';
+    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.roundRect(i*level.size*0.3 - 5, level.size*0.1, 10, 6, 2); ctx.fill(); }
+  }
+
+  // Грядки на палубе
+  if (game.zone === 'ocean' && crops.length > 0) {
+    for (let i = 0; i < crops.length; i++) {
+      const cx = -level.size*0.6 + (i * 15) % level.size;
+      const cy = level.size*0.4;
+      ctx.fillStyle = '#451a03'; ctx.beginPath(); ctx.roundRect(cx, cy, 12, 12, 2); ctx.fill();
+      ctx.fillStyle = '#22c55e'; ctx.fillRect(cx+2, cy+2 + (8 * (1 - crops[i].progress)), 8, 8 * crops[i].progress);
+    }
+  }
+
+  // Турель
+  if (tools.turret > 0) {
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, -level.size*0.5, level.size*0.25, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.stroke();
+    if (megalodon) {
+      const worldAngle = Math.atan2(megalodon.y - player.y, megalodon.x - player.x);
+      const localAngle = worldAngle - (player.angle + Math.PI/2);
+      ctx.rotate(localAngle);
+      ctx.fillStyle = '#ef4444'; ctx.fillRect(0, -4, level.size*0.7, 8);
+    }
+  }
+
+  ctx.restore();
+}
+
 function draw() {
-  if (game.zone === 'ocean' || game.zone === 'island') drawOcean();
+  if (game.zone === 'ocean' || game.zone === 'island') drawOceanBg();
   else if (game.zone === 'cave') { ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, W, H); }
 
   if (game.state === 'menu') return;
@@ -799,47 +1146,35 @@ function draw() {
   if (shake > 0.3) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
   ctx.translate(W/2, H/2); ctx.scale(game.camera.zoom, game.camera.zoom); ctx.translate(-game.camera.x, -game.camera.y);
 
-  if (game.isNight && game.zone === 'ocean') {
-    const lightGrad = ctx.createRadialGradient(player.x, player.y, 80, player.x, player.y, 350);
-    lightGrad.addColorStop(0, 'rgba(15, 23, 42, 0)'); lightGrad.addColorStop(1, 'rgba(2, 6, 23, 0.9)');
-    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 450, 0, Math.PI*2); ctx.fill();
-  } else if (game.zone === 'cave') {
-    const darkness = Math.min(0.98, 0.85 + game.caveDepth * 0.05);
-    const lightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 200);
-    lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
-    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 300, 0, Math.PI*2); ctx.fill();
-  }
-
+  // Остров
   if (game.zone === 'island' || game.zone === 'ocean') drawIsland();
 
-  // Пещера и Лифт
-  if (game.zone === 'cave') {
-    // Лифт
-    if (game.caveDepth < 3) {
-      ctx.fillStyle = '#475569'; ctx.fillRect(elevator.x - 30, elevator.y - 30, 60, 60);
-      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3; ctx.strokeRect(elevator.x - 30, elevator.y - 30, 60, 60);
-      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🛗', elevator.x, elevator.y + 10);
-    }
-    
-    // Выход
-    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, -150, 40, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.fillText('🚪', 0, -142);
-
-    for (const ore of caveOres) {
+  // Руды (остров и пещера)
+  if (game.zone === 'island' || game.zone === 'cave') {
+    for (const ore of ores) {
       ctx.save(); ctx.translate(ore.x, ore.y);
       ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
-      
       if (ore.type === 'copper') ctx.fillStyle = '#f97316';
       else if (ore.type === 'iron') ctx.fillStyle = '#94a3b8';
-      else if (ore.type === 'coal') ctx.fillStyle = '#0f172a';
+      else if (ore.type === 'coal') ctx.fillStyle = '#1e293b';
       else if (ore.type === 'gold') ctx.fillStyle = '#fbbf24';
       else if (ore.type === 'diamond') ctx.fillStyle = '#67e8f9';
-      
       ctx.beginPath(); ctx.arc(-5, -5, 8, 0, Math.PI*2); ctx.fill();
       ctx.beginPath(); ctx.arc(8, 5, 6, 0, Math.PI*2); ctx.fill();
       if (ore.hp < 3) { ctx.fillStyle = '#ef4444'; ctx.fillRect(-15, -30, 30 * (ore.hp/3), 4); }
       ctx.restore();
     }
+  }
+
+  // Выход и Лифт в пещере
+  if (game.zone === 'cave') {
+    if (game.caveDepth < 3) {
+      ctx.fillStyle = '#475569'; ctx.fillRect(elevatorPos.x - 30, elevatorPos.y - 30, 60, 60);
+      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3; ctx.strokeRect(elevatorPos.x - 30, elevatorPos.y - 30, 60, 60);
+      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🛗', elevatorPos.x, elevatorPos.y + 10);
+    }
+    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(exitPos.x, exitPos.y, 40, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('🚪', exitPos.x, exitPos.y + 8);
   }
 
   // Постройки
@@ -849,13 +1184,13 @@ function draw() {
       ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
       ctx.strokeStyle = '#d8b4fe'; ctx.lineWidth = 4; ctx.stroke();
       ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign='center'; ctx.fillText('⚡', 0, 8);
-      ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 250, 0, Math.PI*2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, 250, 0, Math.PI*2); ctx.stroke();
     } else if (b.type === 'drill') {
       ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.roundRect(-25, -25, 50, 50, 8); ctx.fill();
-      ctx.strokeStyle = b.fuel > 0 ? '#22c55e' : '#ef4444'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = b.fuel > 0 ? '#22c55e' : '#ef4444'; ctx.lineWidth = 3; ctx.stroke();
       ctx.fillStyle = '#fbbf24'; ctx.beginPath(); ctx.moveTo(0,-15); ctx.lineTo(15,10); ctx.lineTo(-15,10); ctx.fill();
-      // Индикатор топлива
-      if (b.fuel > 0) { ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px sans-serif'; ctx.fillText(b.fuel, 0, 35); }
+      if (b.fuel > 0) { ctx.fillStyle = '#22c55e'; ctx.font = 'bold 14px sans-serif'; ctx.fillText(b.fuel, 0, 40); }
     }
     ctx.restore();
   }
@@ -866,8 +1201,10 @@ function draw() {
     if (m.type === 'boar') {
       ctx.fillStyle = '#78350f'; ctx.beginPath(); ctx.ellipse(0, 0, 25, 15, 0, 0, Math.PI*2); ctx.fill();
       ctx.fillStyle = '#451a03'; ctx.beginPath(); ctx.arc(20, 0, 10, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(10, -8, 3, 0, Math.PI*2); ctx.fill();
     } else if (m.type === 'bat') {
-      ctx.fillStyle = '#475569'; const wing = Math.sin(game.time * 20) * 10;
+      ctx.fillStyle = '#475569';
+      const wing = Math.sin(game.time * 20) * 10;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-25, -10 + wing); ctx.lineTo(-15, 0); ctx.fill();
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(25, -10 + wing); ctx.lineTo(15, 0); ctx.fill();
       ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, 0, 10, 0, Math.PI*2); ctx.fill();
@@ -875,15 +1212,39 @@ function draw() {
     ctx.restore();
   }
 
-  // Мегалодон, ресурсы (только для океана)
-  if (game.zone === 'ocean') {
-    if (megalodon) {
-      ctx.save(); ctx.translate(megalodon.x, megalodon.y); ctx.rotate(megalodon.angle);
-      ctx.fillStyle = megalodon.hitFlash > 0 ? '#fff' : (megalodon.state === 'stunned' ? '#64748b' : '#1e293b');
-      ctx.beginPath(); ctx.moveTo(megalodon.r*1.5, 0); ctx.quadraticCurveTo(megalodon.r*0.5, -megalodon.r*1.2, -megalodon.r, -megalodon.r*0.8);
-      ctx.lineTo(-megalodon.r*0.5, 0); ctx.lineTo(-megalodon.r, megalodon.r*0.8); ctx.quadraticCurveTo(megalodon.r*0.5, megalodon.r*1.2, megalodon.r*1.5, 0); ctx.fill();
-      ctx.restore();
+  // Мегалодон
+  if (megalodon) {
+    ctx.save(); ctx.translate(megalodon.x, megalodon.y); ctx.rotate(megalodon.angle);
+    if (megalodon.state === 'charging' && megalodon.stateTimer > 0.5) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+      ctx.beginPath(); ctx.arc(0, 0, megalodon.r * 2.2, 0, Math.PI*2); ctx.fill();
     }
+    ctx.fillStyle = megalodon.hitFlash > 0 ? '#fff' : (megalodon.state === 'stunned' ? '#64748b' : '#1e293b');
+    ctx.beginPath();
+    ctx.moveTo(megalodon.r*1.5, 0);
+    ctx.quadraticCurveTo(megalodon.r*0.5, -megalodon.r*1.2, -megalodon.r, -megalodon.r*0.8);
+    ctx.lineTo(-megalodon.r*0.5, 0);
+    ctx.lineTo(-megalodon.r, megalodon.r*0.8);
+    ctx.quadraticCurveTo(megalodon.r*0.5, megalodon.r*1.2, megalodon.r*1.5, 0);
+    ctx.fill();
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath(); ctx.arc(megalodon.r*0.6, -15, 6, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(megalodon.r*0.6, 15, 6, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Гарпуны
+  for (const h of harpoons) {
+    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.angle);
+    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(10, 0); ctx.stroke();
+    ctx.fillStyle = '#cbd5e1';
+    ctx.beginPath(); ctx.moveTo(15, 0); ctx.lineTo(5, -6); ctx.lineTo(5, 6); ctx.fill();
+    ctx.restore();
+  }
+
+  // Ресурсы на воде
+  if (game.zone === 'ocean') {
     for (const res of resources) {
       ctx.save(); ctx.translate(res.x, res.y); ctx.rotate(res.rotation);
       if (res.type === 'wood') { ctx.fillStyle = '#78350f'; ctx.fillRect(-res.r, -res.r*0.5, res.r*2, res.r); }
@@ -895,30 +1256,61 @@ function draw() {
     }
   }
 
+  // Акулы
+  if (game.zone === 'ocean') {
+    for (const sh of sharks) {
+      ctx.save(); ctx.translate(sh.x, sh.y); ctx.rotate(sh.angle);
+      ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.moveTo(0, -25); ctx.lineTo(18, 12); ctx.lineTo(0, 6); ctx.lineTo(-18, 12); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.beginPath(); ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+    }
+  }
+
   // Игрок
   if (!player.isOnFoot) {
-    const level = BOAT_LEVELS[game.boatLevel - 1];
-    ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle + Math.PI/2);
-    ctx.fillStyle = level.color; ctx.beginPath(); ctx.moveTo(0, -level.size * 1.6);
-    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
-    ctx.lineTo(-level.size*0.8, level.size*1.2); ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6); ctx.fill();
-    if (tools.turret > 0) { ctx.fillStyle = '#ef4444'; ctx.fillRect(-5, -level.size*0.8, 10, 20); }
-    ctx.restore();
+    drawBoat();
+    // Рыбалка
+    if (fishing.state !== 'idle') {
+      const lineLen = 120;
+      const lineX = player.x + Math.cos(player.angle) * lineLen;
+      const lineY = player.y + Math.sin(player.angle) * lineLen;
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(lineX, lineY); ctx.stroke();
+      ctx.fillStyle = fishing.state === 'biting' ? '#ef4444' : '#fbbf24';
+      ctx.beginPath(); ctx.arc(lineX, lineY, 6, 0, Math.PI*2); ctx.fill();
+      if (fishing.state === 'biting') { ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign='center'; ctx.fillText('❗', lineX, lineY - 20); }
+    }
   } else {
     ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(0, 5, 15, 8, 0, 0, Math.PI*2); ctx.fill(); 
-    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill(); 
+    ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(0, 5, 15, 8, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, 14, 0, Math.PI*2); ctx.fill();
     ctx.strokeStyle = '#bae6fd'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(6, -4, 3, 0, Math.PI*2); ctx.fill();
     ctx.restore();
   }
 
+  // Частицы
   for (const pt of particles) {
     ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife); ctx.fillStyle = pt.color;
     ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
   }
   ctx.globalAlpha = 1;
+
+  // Затемнение ночи / пещеры
+  if (game.zone === 'ocean' && game.isNight) {
+    const lightGrad = ctx.createRadialGradient(player.x, player.y, 80, player.x, player.y, 350);
+    lightGrad.addColorStop(0, 'rgba(15, 23, 42, 0)'); lightGrad.addColorStop(1, 'rgba(2, 6, 23, 0.9)');
+    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 450, 0, Math.PI*2); ctx.fill();
+  } else if (game.zone === 'cave') {
+    const darkness = Math.min(0.95, 0.8 + game.caveDepth * 0.05);
+    const lightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 200);
+    lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
+    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 300, 0, Math.PI*2); ctx.fill();
+  }
+
   ctx.restore();
 
+  // Джойстик
   if (joystick.active) {
     ctx.save(); ctx.globalAlpha = 0.2;
     ctx.beginPath(); ctx.arc(joystick.bx, joystick.by, JOY_MAX, 0, Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill();
@@ -926,11 +1318,21 @@ function draw() {
     ctx.beginPath(); ctx.arc(joystick.bx + joystick.dx*JOY_MAX, joystick.by + joystick.dy*JOY_MAX, 22, 0, Math.PI*2); ctx.fillStyle = '#38bdf8'; ctx.fill();
     ctx.restore();
   }
+
+  // Предупреждение о боссе
+  if (bossWarningTimer > 0 && !megalodon) {
+    ctx.fillStyle = 'rgba(239, 68, 68, ' + (Math.sin(game.time * 15) * 0.5 + 0.5) + ')';
+    ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('ВНИМАНИЕ: МЕГАЛОДОН', W/2, H/2 - 60);
+    ctx.fillText('ПРИБЛИЖАЕТСЯ', W/2, H/2 - 30);
+  }
 }
 
+/* ===== ЦИКЛ ===== */
 let lastTime = performance.now();
 function loop(now) {
-  let dt = (now - lastTime) / 1000; lastTime = now; if (dt > 0.05) dt = 0.05;
+  let dt = (now - lastTime) / 1000; lastTime = now;
+  if (dt > 0.05) dt = 0.05;
   update(dt); draw(); requestAnimationFrame(loop);
 }
 
@@ -938,20 +1340,22 @@ function showMenu() {
   game.state = 'menu';
   overlayContent.innerHTML = `
     <h1 class="title">МОРСКОЙ ВОЛК</h1>
-    <p class="subtitle">Выживи, победи Мегалодона, найди Остров и построй свою империю с электричеством!</p>
+    <p class="subtitle">Выживи, победи Мегалодона, найди Остров и построй свою империю!</p>
     <button class="btn" id="playBtn">▶ НАЧАТЬ</button>
     <div class="hint">
-      <p>🕹️ Двигайся джойстиком</p>
-      <p>🏝️ Найди остров (плыви вправо-вниз)</p>
-      <p>⚡ Убей босса ради чертежа Генератора</p>
-      <p>🕳️ Исследуй пещеры и спускайся на лифте</p>
-      <p>⛏️ Найди чертеж Бура в пещере и заправляй его углем!</p>
+      <p>🕹️ Двигайся пальцем по экрану</p>
+      <p>🎣 Собирай ресурсы, лови рыбу, чисти воду</p>
+      <p>🦈 На 5 ур. лодки — ночь и Мегалодон</p>
+      <p>🏝️ После босса плыви вправо-вниз к острову</p>
+      <p>🕳️ В пещере найди чертеж Бура и спустись на лифте</p>
+      <p>⚡ Построй Генератор и Электробур (жрет уголь)</p>
     </div>`;
   overlay.classList.remove('hidden');
   document.getElementById('playBtn').addEventListener('click', startGame);
 }
 
-showMenu(); requestAnimationFrame(loop);
+showMenu();
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
