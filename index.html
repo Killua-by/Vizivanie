@@ -2,1824 +2,466 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#0f172a">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>Морской Волк</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Хроники Альдории</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    width: 100%; height: 100%; overflow: hidden; background: #0f172a;
-    font-family: 'Segoe UI', system-ui, sans-serif; color: #f8fafc;
-    -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent;
-    overscroll-behavior: none;
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; padding: 0; font-family: 'Georgia', serif;
+    background: #1a1410; color: #e8d5b0;
+    display: flex; flex-direction: column;
+    height: 100vh; overflow: hidden;
+    user-select: none;
   }
-  canvas { display: block; position: absolute; top: 0; left: 0; touch-action: none; }
-  #uiLayer { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
-  .top-panel { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-  #bossBarContainer { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); width: 85%; max-width: 400px; display: none; flex-direction: column; align-items: center; }
-  .boss-name { font-size: 14px; font-weight: 900; color: #ef4444; letter-spacing: 2px; text-shadow: 0 2px 4px #000; margin-bottom: 4px; }
-  .boss-bar-bg { width: 100%; height: 14px; background: rgba(0,0,0,0.8); border: 2px solid #7f1d1d; border-radius: 8px; overflow: hidden; }
-  .boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #b91c1c, #ef4444, #f87171); transition: width 0.1s; }
-  .stats-container { display: flex; flex-direction: column; gap: 4px; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 6px 10px; width: 128px; }
-  .bar-bg { width: 100%; height: 8px; background: rgba(0,0,0,0.6); border-radius: 4px; overflow: hidden; }
-  .bar-fill { height: 100%; width: 100%; transition: width 0.2s; border-radius: 4px; }
-  .hp-fill { background: linear-gradient(90deg, #dc2626, #f87171); }
-  .hunger-fill { background: linear-gradient(90deg, #d97706, #fbbf24); }
-  .thirst-fill { background: linear-gradient(90deg, #0284c7, #38bdf8); }
-  .resources { background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 6px 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; font-weight: 800; font-size: 12px; }
-  .res-wood { color: #fbbf24; } .res-metal { color: #cbd5e1; } .res-plastic { color: #38bdf8; } .res-fabric { color: #d8b4fe; }
-  .res-copper { color: #f97316; } .res-iron { color: #94a3b8; } .res-coal { color: #cbd5e1; } .res-gold { color: #fbbf24; }
-  .res-diamond { color: #67e8f9; } .res-core { color: #a855f7; font-size: 14px; grid-column: span 2; text-align: center; }
-  #pauseBtn { width: 44px; height: 44px; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; background: rgba(15, 23, 42, 0.9); color: #f8fafc; font-size: 18px; pointer-events: auto; position: absolute; bottom: 20px; left: 20px; z-index: 5; }
-  .inventory { pointer-events: auto; background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 5px 10px; margin-top: 6px; display: flex; gap: 10px; font-size: 12px; font-weight: 800; }
-  .bottom-panel { display: flex; justify-content: flex-end; align-items: flex-end; }
-  .actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; pointer-events: auto; width: 100%; max-width: 260px; margin-left: auto; }
-  .action-btn { width: 100%; aspect-ratio: 1; border-radius: 14px; border: 1px solid rgba(255,255,255,0.2); background: rgba(30, 41, 59, 0.9); color: white; font-size: 22px; display: flex; justify-content: center; align-items: center; }
-  .action-btn:active { transform: scale(0.9); background: rgba(56, 189, 248, 0.4); }
-  .action-btn:disabled { opacity: 0.4; filter: grayscale(1); }
-  .action-btn.craft-btn { grid-column: span 3; height: 44px; font-size: 14px; font-weight: 800; background: linear-gradient(135deg, #8b5cf6, #6d28d9); aspect-ratio: auto; }
-  #interactBtn { display: none; position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); padding: 14px 28px; border-radius: 30px; border: 2px solid #38bdf8; background: rgba(15, 23, 42, 0.95); color: #38bdf8; font-weight: 900; font-size: 15px; pointer-events: auto; white-space: nowrap; }
-  #toast { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); background: rgba(168, 85, 247, 0.95); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 800; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 20; text-align: center; max-width: 80%; }
-  #miniMapCanvas { position: absolute; bottom: 150px; right: 10px; width: 88px; height: 88px; border: 2px solid rgba(56, 189, 248, 0.5); border-radius: 10px; background: rgba(2, 6, 23, 0.8); pointer-events: none; z-index: 4; }
-  #craftScreen { position: fixed; inset: 0; background: #0f172a; z-index: 9999; display: none; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
-  #craftScreen.active { display: block; }
-  .craft-inner { max-width: 420px; margin: 0 auto; padding: 20px; padding-bottom: 60px; text-align: center; }
-  .craft-close-btn { position: sticky; top: 10px; width: 100%; padding: 14px; background: #ef4444; color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 16px; margin-bottom: 20px; z-index: 10; }
-  #overlay { position: absolute; inset: 0; background: #0f172a; z-index: 10; display: none; overflow-y: auto; touch-action: pan-y; -webkit-overflow-scrolling: touch; text-align: center; }
-  #overlay.active { display: block; }
-  .modal { max-width: 420px; width: 100%; padding: 70px 20px 80px; margin: 0 auto; }
-  .title { font-size: 28px; font-weight: 900; letter-spacing: 2px; margin-bottom: 15px; color: #38bdf8; }
-  .title.red { color: #ef4444; } .title.purple { color: #a855f7; }
-  .subtitle { font-size: 15px; color: #94a3b8; margin-bottom: 25px; line-height: 1.6; }
-  .btn { width: 100%; padding: 16px; border: none; border-radius: 14px; background: linear-gradient(135deg, #38bdf8, #0ea5e9); color: #0f172a; font-size: 17px; font-weight: 800; margin-bottom: 12px; }
-  .btn-gray { background: linear-gradient(135deg, #475569, #334155); color: white; }
-  .craft-item { background: #1e293b; border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 15px; text-align: left; margin-bottom: 12px; }
-  .craft-item.boat-card { border: 2px solid #10b981; background: linear-gradient(135deg, #064e3b, #0f172a); }
-  .craft-item .craft-title { font-weight: 900; font-size: 16px; margin-bottom: 6px; display: flex; justify-content: space-between; }
-  .craft-item .craft-desc { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.4; }
-  .craft-item .craft-cost { font-size: 13px; font-weight: 800; margin-bottom: 10px; color: #fbbf24; }
-  .craft-item .craft-btn { width: 100%; padding: 12px; border-radius: 10px; border: none; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; font-weight: 800; font-size: 15px; }
-  .craft-item .craft-btn:disabled { background: #475569; opacity: 0.6; }
-  .craft-item.boat-card .craft-btn { background: linear-gradient(135deg, #10b981, #047857); }
-  .hint { font-size: 13px; color: #64748b; margin-top: 15px; line-height: 2; text-align: left; padding-left: 10px; }
+  #stats {
+    background: #2a1f15; border-bottom: 2px solid #5a4020;
+    padding: 8px 10px; font-size: 13px; line-height: 1.4;
+    flex-shrink: 0;
+  }
+  #stats .row { display: flex; flex-wrap: wrap; gap: 8px; }
+  #stats .item { white-space: nowrap; }
+  #stats .hpbar {
+    width: 100%; height: 8px; background: #3a2010;
+    border-radius: 4px; margin-top: 4px; overflow: hidden;
+  }
+  #stats .hpfill {
+    height: 100%; background: linear-gradient(90deg, #a02020, #e04040);
+    transition: width 0.3s;
+  }
+  #log {
+    flex: 1; overflow-y: auto; padding: 10px 12px;
+    font-size: 14px; line-height: 1.5;
+  }
+  #log p { margin: 0 0 6px 0; }
+  .dmg { color: #ff6060; font-weight: bold; }
+  .heal { color: #60ff80; font-weight: bold; }
+  .gold { color: #ffd040; font-weight: bold; }
+  .exp { color: #60c0ff; font-weight: bold; }
+  .boss { color: #ff40ff; font-weight: bold; }
+  .title { color: #ffd700; font-weight: bold; font-size: 15px; }
+  .sys { color: #a09080; font-style: italic; }
+  #actions {
+    background: #2a1f15; border-top: 2px solid #5a4020;
+    padding: 8px; display: flex; flex-wrap: wrap; gap: 6px;
+    flex-shrink: 0; max-height: 45vh; overflow-y: auto;
+  }
+  button {
+    flex: 1 1 45%; min-height: 44px; padding: 8px 10px;
+    background: #4a3020; color: #e8d5b0;
+    border: 1px solid #7a5030; border-radius: 6px;
+    font-family: inherit; font-size: 13px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:active { background: #6a4530; }
+  button.danger { background: #602020; border-color: #a04040; }
+  button.special { background: #305060; border-color: #5080a0; }
+  button:disabled { opacity: 0.4; }
+  .full { flex: 1 1 100%; }
 </style>
 </head>
 <body>
-<canvas id="game"></canvas>
-<canvas id="miniMapCanvas" width="220" height="220"></canvas>
-
-<div id="uiLayer">
-  <div class="top-panel">
-    <div>
-      <div class="stats-container">
-        <div class="bar-bg"><div class="bar-fill hp-fill" id="hpBar"></div></div>
-        <div class="bar-bg"><div class="bar-fill hunger-fill" id="hungerBar"></div></div>
-        <div class="bar-bg"><div class="bar-fill thirst-fill" id="thirstBar"></div></div>
-      </div>
-      <div class="inventory">
-        <span>🐟 <span id="invFish">0</span></span>
-        <span>💧 <span id="invWater">0</span></span>
-        <span>🥩 <span id="invMeat">0</span></span>
-      </div>
-    </div>
-    <div class="resources">
-      <div><span class="res-wood">🪵</span> <span id="uiWood">0</span></div>
-      <div><span class="res-metal">⚙️</span> <span id="uiMetal">0</span></div>
-      <div><span class="res-plastic">🧴</span> <span id="uiPlastic">0</span></div>
-      <div><span class="res-fabric">🧵</span> <span id="uiFabric">0</span></div>
-      <div><span class="res-copper">🟠</span> <span id="uiCopper">0</span></div>
-      <div><span class="res-iron">⛓️</span> <span id="uiIron">0</span></div>
-      <div><span class="res-coal">⚫</span> <span id="uiCoal">0</span></div>
-      <div id="goldRow" style="display:none;"><span class="res-gold">🟡</span> <span id="uiGold">0</span></div>
-      <div id="diamondRow" style="display:none;"><span class="res-diamond">💎</span> <span id="uiDiamond">0</span></div>
-      <div class="res-core" id="coreRow" style="display:none;">🔮 <span id="uiCore">0</span></div>
-    </div>
-  </div>
-  
-  <div id="bossBarContainer">
-    <div class="boss-name">🦈 МЕГАЛОДОН 🦈</div>
-    <div class="boss-bar-bg"><div class="boss-bar-fill" id="bossHpBar"></div></div>
-  </div>
-
-  <button id="pauseBtn">⏸</button>
-  <button id="interactBtn">ДЕЙСТВИЕ</button>
-  <div id="toast"></div>
-
-  <div class="bottom-panel">
-    <div class="actions">
-      <button class="action-btn" id="fishBtn">🎣</button>
-      <button class="action-btn" id="purifyBtn">💧</button>
-      <button class="action-btn" id="plantBtn">🌱</button>
-      <button class="action-btn craft-btn" id="craftBtn">🛠️ ВЕРСТАК</button>
-    </div>
-  </div>
-</div>
-
-<div id="overlay"><div class="modal" id="overlayContent"></div></div>
-<div id="craftScreen"><div class="craft-inner" id="craftInner"></div></div>
-
+<div id="stats"></div>
+<div id="log"></div>
+<div id="actions"></div>
 <script>
-"use strict";
+'use strict';
 
-let lastTime = performance.now();
-
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const miniCanvas = document.getElementById('miniMapCanvas');
-const miniCtx = miniCanvas.getContext('2d');
-const overlay = document.getElementById('overlay');
-const overlayContent = document.getElementById('overlayContent');
-const craftScreen = document.getElementById('craftScreen');
-const craftInner = document.getElementById('craftInner');
-const toastEl = document.getElementById('toast');
-
-const uiWood = document.getElementById('uiWood'); const uiMetal = document.getElementById('uiMetal');
-const uiPlastic = document.getElementById('uiPlastic'); const uiFabric = document.getElementById('uiFabric');
-const uiCopper = document.getElementById('uiCopper'); const uiIron = document.getElementById('uiIron');
-const uiCoal = document.getElementById('uiCoal'); const uiGold = document.getElementById('uiGold');
-const uiDiamond = document.getElementById('uiDiamond'); const uiCore = document.getElementById('uiCore');
-const coreRow = document.getElementById('coreRow'); const goldRow = document.getElementById('goldRow'); const diamondRow = document.getElementById('diamondRow');
-const fishBtn = document.getElementById('fishBtn'); const purifyBtn = document.getElementById('purifyBtn');
-const plantBtn = document.getElementById('plantBtn'); const craftBtn = document.getElementById('craftBtn');
-const pauseBtn = document.getElementById('pauseBtn'); const interactBtn = document.getElementById('interactBtn');
-const bossBarContainer = document.getElementById('bossBarContainer'); const bossHpBar = document.getElementById('bossHpBar');
-const invFish = document.getElementById('invFish'); const invWater = document.getElementById('invWater'); const invMeat = document.getElementById('invMeat');
-const hpBar = document.getElementById('hpBar'); const hungerBar = document.getElementById('hungerBar'); const thirstBar = document.getElementById('thirstBar');
-
-let W = 0, H = 0, DPR = 1;
-function resize() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2);
-  W = window.innerWidth; H = window.innerHeight;
-  canvas.width = Math.floor(W * DPR); canvas.height = Math.floor(H * DPR);
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-}
-window.addEventListener('resize', resize); resize();
-
-let actx = null;
-function initAudio() {
-  if (!actx) { const AC = window.AudioContext || window.webkitAudioContext; if (AC) actx = new AC(); }
-  if (actx && actx.state === 'suspended') actx.resume();
-}
-function beep(freq, dur, type = 'sine', vol = 0.05) {
-  if (!actx || actx.state !== 'running') return;
-  const o = actx.createOscillator(); const g = actx.createGain();
-  o.type = type; o.frequency.value = freq;
-  g.gain.setValueAtTime(vol, actx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
-  o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + dur);
-}
-
-function pseudo(n) { const x = Math.sin(n * 12.9898) * 43758.5453; return x - Math.floor(x); }
-function rnd(min, max) { return min + Math.random() * (max - min); }
-
-const WORLD = { minX: -1500, maxX: 1500, minY: -1500, maxY: 1500 };
-const island = { x: 900, y: 900, r: 400 };
-const caveEntrance = { x: 900, y: 550 };
-const boatDock = { x: 900, y: 1350 };
-
-// 3 МАРШРУТА АКУЛ (не пересекают остров)
-const SHARK_ROUTES = [
-  [{x:-1200, y:-1200}, {x:-200, y:-1200}, {x:-200, y:-200}, {x:-1200, y:-200}],
-  [{x:-1000, y:-1300}, {x:1000, y:-1300}, {x:1000, y:-500}, {x:-1000, y:-500}],
-  [{x:-1300, y:-300}, {x:-500, y:-300}, {x:-500, y:800}, {x:-1300, y:800}]
-];
-
-const game = {
-  state: 'menu', wood: 0, metal: 0, plastic: 0, fabric: 0, copper: 0, iron: 0, coal: 0, gold: 0, diamond: 0, core: 0,
-  boatLevel: 1, isNight: false, zone: 'ocean', caveDepth: 1,
-  blueprints: { gen: false, drill: false },
-  isAdmin: false,
-  camera: { x: 0, y: 0, zoom: 1, targetZoom: 1 }, time: 0, toastTimer: 0
+// ==================== ДАННЫЕ ====================
+const CLASSES = {
+  knight: {name:'Рыцарь', emoji:'🛡️', hp:30, atk:6, def:5, skill:'Щит веры',
+           skillDesc:'Блокирует следующий удар', skillType:'block'},
+  rogue:  {name:'Плут', emoji:'🗡️', hp:22, atk:8, def:2, skill:'Карманник',
+           skillDesc:'Крадёт 3-8 золота', skillType:'steal'},
+  mage:   {name:'Маг', emoji:'🧙', hp:20, atk:7, def:1, skill:'Огненный шар',
+           skillDesc:'Урон 12, тратит 5 HP', skillType:'fireball'}
 };
 
-const player = {
-  x: 0, y: 0, vx: 0, vy: 0, angle: -Math.PI/2, wakeTimer: 0,
-  hp: 100, maxHp: 100, hunger: 100, maxHunger: 100, thirst: 100, maxThirst: 100,
-  isOnFoot: false, interactMode: 'none', invuln: 0
+const ENEMIES = {
+  wolf:      {name:'Волк', emoji:'🐺', hp:10, atk:3, def:1, gold:3, exp:8},
+  bandit:    {name:'Разбойник', emoji:'🗡️', hp:15, atk:4, def:1, gold:7, exp:12},
+  guard:     {name:'Стражник замка', emoji:'🛡️', hp:20, atk:6, def:3, gold:12, exp:20},
+  darkknight:{name:'Тёмный рыцарь', emoji:'⚔️', hp:30, atk:8, def:4, gold:20, exp:35},
+  morgana:   {name:'Моргана', emoji:'👑', hp:60, atk:10, def:4, gold:100, exp:100, boss:true}
 };
 
-const inventory = { fish: 0, water: 0, seeds: 0, crops: 0, meat: 0 };
-const tools = { rod: 1, farm: 1, purifier: 1, turret: 0, net: 0 };
-
-let fishing = { state: 'idle', timer: 0 };
-let purifyTimer = 0;
-let crops = [];
-let megalodon = null;
-let harpoons = [];
-let turretCooldown = 0;
-let bossWarningTimer = 0;
-let harpoonCooldown = 0;
-
-const BOAT_LEVELS = [
-  { name: "Плот", speed: 130, size: 18, costW: 0, costM: 0 },
-  { name: "Лодка", speed: 160, size: 24, costW: 40, costM: 10 },
-  { name: "Катер", speed: 200, size: 32, costW: 120, costM: 50 },
-  { name: "Яхта", speed: 240, size: 45, costW: 300, costM: 150 },
-  { name: "Мега-Яхта", speed: 280, size: 65, costW: 800, costM: 400 }
+const SHOP_ITEMS = [
+  {id:'potion',  name:'🧪 Зелье лечения (+10 HP)', price:5,  type:'potion'},
+  {id:'bigpotion',name:'🧪 Большое зелье (+20 HP)', price:9,  type:'bigpotion'},
+  {id:'sword',   name:'⚔️ Стальной меч (+3 атака)', price:15, type:'weapon', atk:3},
+  {id:'armor',   name:'🛡️ Кольчуга (+3 защита)',   price:15, type:'armor', def:3},
+  {id:'amulet',  name:'🧿 Оберег (+2 защита)',     price:10, type:'armor', def:2}
 ];
 
-let resources = [];
-let particles = [];
-let sharks = [];
-let buildings = [];
-let mobs = [];
-let ores = [];
-let mountains = [];
+// ==================== СОСТОЯНИЕ ====================
+let G = {
+  player: null,
+  scene: 'start',
+  logLines: [],
+  inCombat: false,
+  enemy: null,
+  flags: {},
+  killed: 0
+};
 
-function generateMountains() {
-  mountains = [];
-  for (let x = WORLD.minX; x <= WORLD.maxX; x += 120) {
-    mountains.push({ x: x + rnd(-30,30), y: WORLD.minY + rnd(-20,20), size: rnd(60,110), seed: Math.random()*1000 });
-    mountains.push({ x: x + rnd(-30,30), y: WORLD.maxY + rnd(-20,20), size: rnd(60,110), seed: Math.random()*1000 });
-  }
-  for (let y = WORLD.minY + 120; y <= WORLD.maxY - 120; y += 120) {
-    mountains.push({ x: WORLD.minX + rnd(-20,20), y: y + rnd(-30,30), size: rnd(60,110), seed: Math.random()*1000 });
-    mountains.push({ x: WORLD.maxX + rnd(-20,20), y: y + rnd(-30,30), size: rnd(60,110), seed: Math.random()*1000 });
-  }
-}
-generateMountains();
-
-const CRAFT_RECIPES = [
-  { id: 'rod', name: '🎣 Удочка', maxLvl: 3, desc: 'Ускоряет клев.', costs: [ {w:30, f:10, p:5}, {w:80, f:30, m:20, p:15} ] },
-  { id: 'farm', name: '🌱 Грядка', maxLvl: 3, desc: 'Ускоряет рост урожая.', costs: [ {w:40, p:20}, {w:100, p:50, m:20} ] },
-  { id: 'purifier', name: '💧 Опреснитель', maxLvl: 3, desc: 'Ускоряет очистку.', costs: [ {m:20, p:15}, {m:60, p:50, f:20} ] },
-  { id: 'turret', name: '🎯 Гарпун-турель', maxLvl: 3, desc: 'Автострельба. КД -0.2с за ур.', costs: [ {m:50, p:20, f:10}, {m:150, p:80, f:50}, {m:400, p:200, f:120} ] },
-  { id: 'net', name: '🕸️ Сетка (трал)', maxLvl: 3, desc: 'Радиус притягивания +40 за ур.', costs: [ {w:50, p:15}, {w:150, p:80, f:30}, {w:400, p:200, f:100} ] }
-];
-
-const BUILD_RECIPES = [
-  { id: 'gen', name: '⚡ Генератор', desc: 'Дает энергию.', costs: [{core: 1, iron: 20, copper: 30}], reqBp: 'gen' },
-  { id: 'drill', name: '⛏️ Электробур', desc: 'Копает руду (жрёт уголь).', costs: [{iron: 15, copper: 15, m: 20}], reqBp: 'drill' }
-];
-
-const joystick = { active: false, id: null, bx: 0, by: 0, dx: 0, dy: 0 };
-const JOY_MAX = 55;
-const keys = { w: false, a: false, s: false, d: false };
-
-function showToast(text, color = '#a855f7') {
-  toastEl.textContent = text; toastEl.style.background = color;
-  toastEl.style.opacity = 1; game.toastTimer = 3;
+// ==================== СЛУЖЕБНЫЕ ====================
+function log(text, cls) {
+  G.logLines.push({text, cls: cls||''});
+  if (G.logLines.length > 200) G.logLines.shift();
+  renderLog();
+  const el = document.getElementById('log');
+  el.scrollTop = el.scrollHeight;
 }
 
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  if (game.state !== 'playing') return;
-  if (fishing.state === 'biting') {
-    inventory.fish++; fishing.state = 'idle'; beep(1200, 0.15, 'sine'); updateUI();
-    for(let i=0; i<10; i++) particles.push({ x: player.x, y: player.y, vx: rnd(-100,100), vy: rnd(-100,100), life: 0.5, maxLife: 0.5, size: 4, color: '#38bdf8' });
-    return;
-  }
-  for (const t of e.changedTouches) {
-    if (!joystick.active) { joystick.active = true; joystick.id = t.identifier; joystick.bx = t.clientX; joystick.by = t.clientY; joystick.dx = 0; joystick.dy = 0; }
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (game.state !== 'playing') return;
-  for (const t of e.changedTouches) {
-    if (t.identifier === joystick.id) {
-      let dx = t.clientX - joystick.bx; let dy = t.clientY - joystick.by;
-      const d = Math.hypot(dx, dy);
-      if (d > JOY_MAX) { dx = dx/d * JOY_MAX; dy = dy/d * JOY_MAX; }
-      joystick.dx = dx / JOY_MAX; joystick.dy = dy / JOY_MAX;
-    }
-  }
-}, { passive: false });
-
-function endTouch(e) {
-  e.preventDefault();
-  for (const t of e.changedTouches) {
-    if (t.identifier === joystick.id) { joystick.active = false; joystick.id = null; joystick.dx = 0; joystick.dy = 0; }
-  }
-}
-canvas.addEventListener('touchend', endTouch, { passive: false });
-canvas.addEventListener('touchcancel', endTouch, { passive: false });
-window.addEventListener('keydown', e => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = true; });
-window.addEventListener('keyup', e => { if (e.key.toLowerCase() in keys) keys[e.key.toLowerCase()] = false; });
-
-function startGame() {
-  initAudio();
-  game.wood = 0; game.metal = 0; game.plastic = 0; game.fabric = 0;
-  game.copper = 0; game.iron = 0; game.coal = 0; game.gold = 0; game.diamond = 0; game.core = 0;
-  game.boatLevel = 1; game.isNight = false; game.zone = 'ocean'; game.caveDepth = 1;
-  game.blueprints = { gen: false, drill: false };
-  game.isAdmin = false;
-  game.toastTimer = 0;
-  tools.rod = 1; tools.farm = 1; tools.purifier = 1; tools.turret = 0; tools.net = 0;
-  player.x = 0; player.y = 0; player.vx = 0; player.vy = 0; player.isOnFoot = false; player.invuln = 0;
-  player.hp = 100; player.hunger = 100; player.thirst = 100;
-  inventory.fish = 0; inventory.water = 0; inventory.seeds = 0; inventory.crops = 0; inventory.meat = 0;
-  crops = []; megalodon = null; harpoons = []; buildings = []; mobs = []; ores = [];
-  turretCooldown = 0; harpoonCooldown = 0;
-  game.camera.x = 0; game.camera.y = 0; game.camera.zoom = 1; game.camera.targetZoom = 1;
-  resources = []; particles = []; sharks = [];
-  fishing.state = 'idle'; purifyTimer = 0; bossWarningTimer = 0;
-  bossBarContainer.style.display = 'none';
-  coreRow.style.display = 'none'; goldRow.style.display = 'none'; diamondRow.style.display = 'none';
-  overlay.classList.remove('active');
-  craftScreen.classList.remove('active');
-  game.state = 'playing';
-  spawnResources(25);
-  for (let i = 0; i < 60; i++) spawnScatteredResource();
-  updateUI();
-  lastTime = performance.now();
+function renderLog() {
+  const el = document.getElementById('log');
+  el.innerHTML = G.logLines.map(l =>
+    `<p class="${l.cls}">${l.text}</p>`
+  ).join('');
 }
 
-function spawnScatteredResource() {
-  for (let attempt = 0; attempt < 10; attempt++) {
-    const x = rnd(WORLD.minX + 200, WORLD.maxX - 200);
-    const y = rnd(WORLD.minY + 200, WORLD.maxY - 200);
-    if (Math.hypot(x - island.x, y - island.y) < island.r + 100) continue;
-    const r = Math.random();
-    let type = 'wood';
-    if (r > 0.4 && r <= 0.6) type = 'plastic';
-    else if (r > 0.6 && r <= 0.75) type = 'metal';
-    else if (r > 0.75 && r <= 0.85) type = 'fabric';
-    else if (r > 0.85) type = 'seed';
-    resources.push({ x, y, type, r: type === 'metal' ? 14 : 16, rotation: Math.random() * Math.PI, rotSpeed: rnd(-1, 1), seed: Math.random() * 1000 });
-    return;
-  }
+function renderStats() {
+  const el = document.getElementById('stats');
+  if (!G.player) { el.innerHTML = '<span class="sys">Создание героя...</span>'; return; }
+  const p = G.player;
+  const hpPct = Math.max(0, Math.round(p.hp / p.maxHp * 100));
+  el.innerHTML = `
+    <div class="row">
+      <span class="item">${p.emoji} <b>${p.name}</b></span>
+      <span class="item">❤️ ${Math.max(0,p.hp)}/${p.maxHp}</span>
+      <span class="item">⚔️ ${p.atk}</span>
+      <span class="item">🛡️ ${p.def}</span>
+      <span class="item">🪙 ${p.gold}</span>
+      <span class="item">⭐ ${p.level} (${p.exp}/${p.expNext})</span>
+    </div>
+    <div class="hpbar"><div class="hpfill" style="width:${hpPct}%"></div></div>
+  `;
 }
 
-function spawnResources(n) {
-  for (let i = 0; i < n; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 200 + Math.random() * 400;
-    const r = Math.random();
-    let type = 'wood';
-    if (r > 0.4 && r <= 0.6) type = 'plastic';
-    else if (r > 0.6 && r <= 0.75) type = 'metal';
-    else if (r > 0.75 && r <= 0.85) type = 'fabric';
-    else if (r > 0.85) type = 'seed';
-    resources.push({ x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist, type, r: type === 'metal' ? 14 : 16, rotation: Math.random() * Math.PI, rotSpeed: rnd(-1,1), seed: Math.random() * 1000 });
-  }
+function setActions(buttons) {
+  const el = document.getElementById('actions');
+  el.innerHTML = '';
+  buttons.forEach(b => {
+    if (!b) return;
+    const btn = document.createElement('button');
+    btn.textContent = b.label;
+    if (b.cls) btn.className = b.cls;
+    if (b.disabled) btn.disabled = true;
+    btn.onclick = b.action;
+    el.appendChild(btn);
+  });
 }
 
-function updateUI() {
-  uiWood.textContent = game.wood; uiMetal.textContent = game.metal;
-  uiPlastic.textContent = game.plastic; uiFabric.textContent = game.fabric;
-  uiCopper.textContent = game.copper; uiIron.textContent = game.iron;
-  uiCoal.textContent = game.coal; uiGold.textContent = game.gold; uiDiamond.textContent = game.diamond;
-  uiCore.textContent = game.core;
-  invFish.textContent = inventory.fish; invWater.textContent = inventory.water; invMeat.textContent = inventory.meat;
-  if (game.core > 0) coreRow.style.display = 'block';
-  if (game.gold > 0) goldRow.style.display = 'block';
-  if (game.diamond > 0) diamondRow.style.display = 'block';
-  hpBar.style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
-  hungerBar.style.width = Math.max(0, (player.hunger / player.maxHunger) * 100) + '%';
-  thirstBar.style.width = Math.max(0, (player.thirst / player.maxThirst) * 100) + '%';
-  fishBtn.disabled = fishing.state !== 'idle' || player.isOnFoot;
-  purifyBtn.disabled = purifyTimer > 0 || player.isOnFoot;
-  plantBtn.disabled = !(inventory.seeds > 0 && game.boatLevel >= 2 && !player.isOnFoot);
-  if (megalodon) {
-    bossBarContainer.style.display = 'flex';
-    bossHpBar.style.width = Math.max(0, (megalodon.hp / megalodon.maxHp) * 100) + '%';
-  } else { bossBarContainer.style.display = 'none'; }
-  if (player.interactMode !== 'none') {
-    interactBtn.style.display = 'block';
-    if (player.interactMode === 'island') interactBtn.textContent = '🏝️ ВЫСАДИТЬСЯ';
-    else if (player.interactMode === 'boat') interactBtn.textContent = '⚓ СЕСТЬ В ЛОДКУ';
-    else if (player.interactMode === 'cave') interactBtn.textContent = '🕳️ ВОЙТИ В ПЕЩЕРУ';
-    else if (player.interactMode === 'exitCave') interactBtn.textContent = '☀️ ВЫЙТИ ИЗ ПЕЩЕРЫ';
-    else if (player.interactMode === 'elevator') interactBtn.textContent = `🛗 СПУСТИТЬСЯ НА УР. ${game.caveDepth + 1}`;
-  } else { interactBtn.style.display = 'none'; }
-}
+function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
-function upgradeBoat() {
-  if (game.boatLevel >= BOAT_LEVELS.length || player.isOnFoot) return;
-  const next = BOAT_LEVELS[game.boatLevel];
-  if (game.wood >= next.costW && game.metal >= next.costM) {
-    game.wood -= next.costW; game.metal -= next.costM;
-    game.boatLevel++;
-    game.camera.targetZoom = Math.max(0.5, 1 - (game.boatLevel * 0.08));
-    beep(400, 0.1, 'square', 0.08);
-    for(let i=0; i<30; i++) particles.push({ x: player.x, y: player.y, vx: rnd(-200,200), vy: rnd(-200,200), life: 1, maxLife: 1, size: rnd(2,6), color: '#fbbf24' });
-    if (game.boatLevel === 5 && !game.isNight) {
-      game.isNight = true; bossWarningTimer = 5;
-      beep(200, 1.0, 'sawtooth', 0.1);
-      setTimeout(() => beep(150, 1.5, 'sawtooth', 0.1), 500);
-    }
-    updateUI();
-  }
-}
-
-function spawnMegalodon() {
-  const angle = Math.random() * Math.PI * 2;
-  megalodon = {
-    x: player.x + Math.cos(angle) * 600, y: player.y + Math.sin(angle) * 600,
-    hp: 3000, maxHp: 3000, speed: 80, angle: angle + Math.PI,
-    state: 'circling', stateTimer: 3, r: 60, hitFlash: 0
+// ==================== ИГРОК ====================
+function createPlayer(name, clsKey) {
+  const c = CLASSES[clsKey];
+  G.player = {
+    name: name || c.name,
+    cls: clsKey,
+    emoji: c.emoji,
+    hp: c.hp, maxHp: c.hp,
+    atk: c.atk, def: c.def,
+    gold: 10,
+    level: 1, exp: 0, expNext: 30,
+    inventory: {potion: 2},
+    skill: c.skill,
+    skillDesc: c.skillDesc,
+    skillType: c.skillType,
+    equipment: {}
   };
-  updateUI();
+  G.killed = 0;
+  G.flags = {};
+  saveGame();
+  log(`<span class="title">${c.emoji} ${G.player.name} — ${c.name}</span>`, '');
+  log(`Ты прибываешь в деревню Заречье. Впереди — приключения, сражения и древняя тьма.`, 'sys');
+  goVillage();
 }
 
-function spawnShark() {
-  if (game.boatLevel < 2 || game.isNight || player.isOnFoot) return;
-  if (sharks.length >= 3) return;
-  const usedRoutes = sharks.map(s => s.routeId);
-  const available = [0, 1, 2].filter(r => !usedRoutes.includes(r));
-  if (available.length === 0) return;
-  const routeId = available[Math.floor(Math.random() * available.length)];
-  const route = SHARK_ROUTES[routeId];
-  const startWp = route[0];
-  const shSpeed = 50 + game.boatLevel * 30;
-  sharks.push({
-    x: startWp.x, y: startWp.y, speed: shSpeed, angle: 0, biteCooldown: 0,
-    state: 'patrol', routeId: routeId, wpIndex: 1,
-    hp: 3, maxHp: 3, hiddenTimer: 0
-  });
+// ==================== ЛОКАЦИИ ====================
+function goVillage() {
+  G.scene = 'village';
+  setActions([
+    {label:'🏠 Таверна (отдых, 3 зол.)', action:() => tavern()},
+    {label:'🧺 Лавка Марло', action:() => shop()},
+    {label:'🌲 Лес (бой)', action:() => forest()},
+    {label:'🏰 Замок (бой, босс)', action:() => castle()},
+    {label:'📜 Квест: Зорька', action:() => questCow(), disabled: G.flags.cowDone},
+    {label:'💾 Сохранить', action:() => { saveGame(); log('Игра сохранена.', 'sys'); }},
+    {label:'🔄 Начать заново', action:() => { if(confirm('Удалить сохранение?')) { clearSave(); location.reload(); } }, cls:'danger full'}
+  ]);
 }
 
-function generateIslandOres() {
-  ores = [];
-  for (let i = 0; i < 12; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 60 + Math.random() * (island.r * 0.7);
-    ores.push({ x: island.x + Math.cos(angle) * dist, y: island.y + Math.sin(angle) * dist, type: Math.random() > 0.5 ? 'copper' : 'iron', hp: 3, seed: Math.random() * 1000 });
+function tavern() {
+  if (G.player.gold < 3) { log('Не хватает золота (нужно 3).', 'sys'); return goVillage(); }
+  G.player.gold -= 3;
+  G.player.hp = G.player.maxHp;
+  log('Ты отдыхаешь в таверне. Силы восстановлены. <span class="gold">−3 золота</span>.', '');
+  renderStats(); saveGame(); goVillage();
+}
+
+function shop() {
+  G.scene = 'shop';
+  log('🧺 <b>Лавка Марло.</b> «Заходи, герой. Есть всё, что нужно.»', 'title');
+  const buttons = SHOP_ITEMS.map(it => ({
+    label: `${it.name} — ${it.price}🪙`,
+    action: () => buyItem(it),
+    disabled: G.player.gold < it.price
+  }));
+  buttons.push({label:'🚪 Уйти', action:() => goVillage(), cls:'full'});
+  setActions(buttons);
+}
+
+function buyItem(it) {
+  if (G.player.gold < it.price) { log('Не хватает золота.', 'sys'); return; }
+  G.player.gold -= it.price;
+  if (it.type === 'potion' || it.type === 'bigpotion') {
+    G.player.inventory[it.type] = (G.player.inventory[it.type] || 0) + 1;
+    log(`Куплено: ${it.name}. <span class="gold">−${it.price}</span>`, '');
+  } else if (it.type === 'weapon') {
+    G.player.atk += it.atk;
+    log(`Куплено: ${it.name}. Атака +${it.atk}! <span class="gold">−${it.price}</span>`, 'heal');
+  } else if (it.type === 'armor') {
+    G.player.def += it.def;
+    log(`Куплено: ${it.name}. Защита +${it.def}! <span class="gold">−${it.price}</span>`, 'heal');
+  }
+  renderStats(); saveGame(); shop();
+}
+
+// ==================== БОЙ ====================
+function startCombat(enemyKey, onWin) {
+  const e = ENEMIES[enemyKey];
+  G.enemy = {
+    key: enemyKey, name: e.name, emoji: e.emoji,
+    hp: e.hp, maxHp: e.hp, atk: e.atk, def: e.def,
+    gold: e.gold, exp: e.exp, boss: e.boss
+  };
+  G.inCombat = true;
+  G.onWin = onWin;
+  G.player.blocking = false;
+  log(`<span class="boss">${e.emoji} ${e.name}</span> преграждает путь!`, '');
+  combatTurn();
+}
+
+function combatTurn() {
+  if (!G.inCombat) return;
+  const p = G.player, e = G.enemy;
+  renderStats();
+  setActions([
+    {label:'⚔️ Атаковать', action:() => playerAttack()},
+    {label:`✨ ${p.skill}`, action:() => playerSkill(), cls:'special'},
+    {label:`🧪 Зелье (${p.inventory.potion||0})`, action:() => usePotion('potion'), disabled:!(p.inventory.potion>0)},
+    {label:`🧪 Большое (${p.inventory.bigpotion||0})`, action:() => usePotion('bigpotion'), disabled:!(p.inventory.bigpotion>0)},
+    {label:'🏃 Бежать', action:() => flee(), cls:'danger full'}
+  ]);
+  if (e.boss) log(`<span class="boss">👑 ${e.name}: ❤️ ${e.hp}/${e.maxHp}</span>`, '');
+  else log(`${e.emoji} ${e.name}: ❤️ ${e.hp}/${e.maxHp}`, 'sys');
+}
+
+function playerAttack() {
+  const p = G.player, e = G.enemy;
+  const dmg = Math.max(1, p.atk - e.def + rand(-1, 2));
+  e.hp -= dmg;
+  log(`Ты бьёшь ${e.name}. <span class="dmg">−${dmg} HP</span>`, '');
+  if (e.hp <= 0) return winCombat();
+  enemyTurn();
+}
+
+function playerSkill() {
+  const p = G.player, e = G.enemy;
+  if (p.skillType === 'fireball') {
+    if (p.hp <= 5) { log('Слишком мало HP для огненного шара!', 'sys'); return combatTurn(); }
+    p.hp -= 5;
+    const dmg = 12 + rand(0,3);
+    e.hp -= dmg;
+    log(`🔥 Огненный шар! <span class="dmg">−${dmg} HP</span> (ты потерял 5 HP)`, '');
+    if (e.hp <= 0) return winCombat();
+    enemyTurn();
+  } else if (p.skillType === 'block') {
+    p.blocking = true;
+    log('🛡️ Ты поднимаешь щит веры. Следующий удар будет ослаблен.', 'heal');
+    enemyTurn();
+  } else if (p.skillType === 'steal') {
+    const stolen = rand(3, 8);
+    p.gold += stolen;
+    log(`🖐️ Карманник! Ты крадёшь <span class="gold">${stolen} золота</span> у ${e.name}.`, 'gold');
+    renderStats();
+    enemyTurn();
   }
 }
 
-function generateCaveOres(depth) {
-  ores = [];
-  for (let i = 0; i < 18; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 100 + Math.random() * 500;
-    let type = 'coal';
-    if (depth === 1) type = Math.random() > 0.4 ? 'coal' : 'copper';
-    else if (depth === 2) type = Math.random() > 0.4 ? 'iron' : 'gold';
-    else if (depth === 3) type = Math.random() > 0.5 ? 'diamond' : 'gold';
-    ores.push({ x: Math.cos(angle) * dist, y: Math.sin(angle) * dist, type, hp: 3, seed: Math.random() * 1000 });
-  }
-}
- 
-function update(dt) {
-  if (game.state !== 'playing') return;
-  game.time += dt;
-  if (game.toastTimer > 0) { game.toastTimer -= dt; if (game.toastTimer <= 0) toastEl.style.opacity = 0; }
-  if (player.invuln > 0) player.invuln -= dt;
-
-  if (bossWarningTimer > 0) {
-    bossWarningTimer -= dt;
-    if (bossWarningTimer <= 0 && !megalodon) spawnMegalodon();
-  }
-
-  player.hunger -= 0.3 * dt; player.thirst -= 0.5 * dt;
-  if (player.hunger <= 0 || player.thirst <= 0) player.hp -= 3 * dt;
-  if (player.hunger < 50 && inventory.meat > 0) { inventory.meat--; player.hunger += 50; beep(600, 0.1, 'sine'); }
-  else if (player.hunger < 50 && inventory.fish > 0) { inventory.fish--; player.hunger += 30; beep(600, 0.1, 'sine'); }
-  else if (player.hunger < 50 && inventory.crops > 0) { inventory.crops--; player.hunger += 40; beep(600, 0.1, 'sine'); }
-  if (player.thirst < 50 && inventory.water > 0) { inventory.water--; player.thirst += 40; beep(800, 0.1, 'sine'); }
-  player.hunger = Math.max(0, Math.min(100, player.hunger));
-  player.thirst = Math.max(0, Math.min(100, player.thirst));
-  player.hp = Math.max(0, Math.min(100, player.hp));
-
-  if (player.hp <= 0) {
-    game.state = 'gameover';
-    beep(150, 0.5, 'sawtooth', 0.1);
-    overlayContent.innerHTML = `<h1 class="title red">ТЫ ПОГИБ</h1><p class="subtitle">Твоя история оборвалась...</p><button class="btn" onclick="startGame()">▶ ЗАНОВО</button>`;
-    overlay.classList.add('active');
-    return;
-  }
-
-  if (fishing.state === 'casting') {
-    fishing.timer -= dt;
-    if (fishing.timer <= 0) { fishing.state = 'waiting'; fishing.timer = Math.max(1, 4 - tools.rod) + Math.random() * 2; }
-  } else if (fishing.state === 'waiting') {
-    fishing.timer -= dt;
-    if (fishing.timer <= 0) { fishing.state = 'biting'; fishing.timer = 1.5 + (tools.rod * 0.3); beep(900, 0.2, 'square', 0.08); }
-  } else if (fishing.state === 'biting') {
-    fishing.timer -= dt;
-    if (fishing.timer <= 0) { fishing.state = 'idle'; }
-  }
-  if (purifyTimer > 0) {
-    purifyTimer -= dt;
-    if (purifyTimer <= 0) { inventory.water++; beep(1000, 0.2, 'sine'); }
-  }
-  for (let i = crops.length - 1; i >= 0; i--) {
-    crops[i].progress += dt * (0.08 + (tools.farm * 0.03));
-    if (crops[i].progress >= 1) { inventory.crops++; crops.splice(i, 1); beep(700, 0.2, 'sine', 0.08); }
-  }
-
-  // Зоны
-  if (game.zone === 'ocean' && !player.isOnFoot) {
-    const d = Math.hypot(player.x - island.x, player.y - island.y);
-    player.interactMode = (d < island.r + 100) ? 'island' : 'none';
-  } else if (game.zone === 'island' && player.isOnFoot) {
-    const dCave = Math.hypot(player.x - caveEntrance.x, player.y - caveEntrance.y);
-    const dBoat = Math.hypot(player.x - boatDock.x, player.y - boatDock.y);
-    if (dCave < 80) player.interactMode = 'cave';
-    else if (dBoat < 120) player.interactMode = 'boat';
-    else player.interactMode = 'none';
-  } else if (game.zone === 'cave') {
-    const dElev = Math.hypot(player.x - 0, player.y - (-400));
-    const dExit = Math.hypot(player.x - 0, player.y - 400);
-    if (dElev < 90 && game.caveDepth < 3) player.interactMode = 'elevator';
-    else if (dExit < 80) player.interactMode = 'exitCave';
-    else player.interactMode = 'none';
-  }
-
-  const level = BOAT_LEVELS[game.boatLevel - 1];
-  if (!level) return;
-  let speed = player.isOnFoot ? 150 : level.speed;
-  let mx = 0, my = 0;
-  if (joystick.active) { mx = joystick.dx; my = joystick.dy; }
-  if (keys.w) my -= 1; if (keys.s) my += 1; if (keys.a) mx -= 1; if (keys.d) mx += 1;
-  const mag = Math.hypot(mx, my);
-  if (mag > 1) { mx /= mag; my /= mag; }
-  if (mag > 0.1) { player.vx += mx * speed * 3 * dt; player.vy += my * speed * 3 * dt; player.angle = Math.atan2(my, mx); }
-  player.vx *= 0.9; player.vy *= 0.9;
-  const pSpeed = Math.hypot(player.vx, player.vy);
-  if (pSpeed > speed) { player.vx = (player.vx / pSpeed) * speed; player.vy = (player.vy / pSpeed) * speed; }
-  player.x += player.vx * dt; player.y += player.vy * dt;
-
-  // Ограничение гор
-  const pad = 60;
-  if (player.x < WORLD.minX + pad) { player.x = WORLD.minX + pad; player.vx = 0; }
-  if (player.x > WORLD.maxX - pad) { player.x = WORLD.maxX - pad; player.vx = 0; }
-  if (player.y < WORLD.minY + pad) { player.y = WORLD.minY + pad; player.vy = 0; }
-  if (player.y > WORLD.maxY - pad) { player.y = WORLD.maxY - pad; player.vy = 0; }
-
-  // КОЛЛИЗИЯ ОСТРОВА
-  if (game.zone === 'ocean' && !player.isOnFoot) {
-    const dx = player.x - island.x;
-    const dy = player.y - island.y;
-    const dist = Math.hypot(dx, dy);
-    const minDist = island.r + level.size * 0.7;
-    if (dist < minDist && dist > 0.1) {
-      const ang = Math.atan2(dy, dx);
-      player.x = island.x + Math.cos(ang) * minDist;
-      player.y = island.y + Math.sin(ang) * minDist;
-      player.vx *= -0.3;
-      player.vy *= -0.3;
-    }
-  }
-
-  game.camera.x = player.x; game.camera.y = player.y;
-
-  if (pSpeed > 20 && !player.isOnFoot) {
-    player.wakeTimer -= dt;
-    if (player.wakeTimer <= 0) {
-      player.wakeTimer = 0.05;
-      particles.push({ x: player.x - Math.cos(player.angle)*level.size*0.5, y: player.y - Math.sin(player.angle)*level.size*0.5, vx: rnd(-30,30) - player.vx*0.2, vy: rnd(-30,30) - player.vy*0.2, life: 1.5, maxLife: 1.5, size: rnd(4,12), color: 'rgba(255,255,255,0.6)' });
-    }
-  }
-
-  if (game.zone === 'ocean' && !player.isOnFoot) {
-    if (resources.length < 60 && Math.random() < dt * 8) spawnScatteredResource();
-    if (resources.length < 25) spawnResources(1);
-    if (!game.isNight && sharks.length < 3 && Math.random() < dt * 0.2) spawnShark();
-
-    // Сбор ресурсов (радиус с сеткой)
-    const pullRadius = level.size + 90 + (tools.net * 40);
-    for (let i = resources.length - 1; i >= 0; i--) {
-      const res = resources[i];
-      res.rotation += res.rotSpeed * dt;
-      const dx = player.x - res.x; const dy = player.y - res.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < pullRadius && dist > 0.1) {
-        res.x += (dx / dist) * 500 * dt;
-        res.y += (dy / dist) * 500 * dt;
-      }
-      if (dist < level.size + res.r + 20) {
-        const bonus = game.boatLevel * 2;
-        if (res.type === 'wood') { game.wood += 5 + bonus; beep(300, 0.08, 'triangle', 0.05); }
-        else if (res.type === 'metal') { game.metal += 3 + bonus; beep(500, 0.08, 'square', 0.04); }
-        else if (res.type === 'plastic') { game.plastic += 4 + bonus; beep(400, 0.08, 'sine', 0.04); }
-        else if (res.type === 'fabric') { game.fabric += 2 + bonus; beep(350, 0.08, 'triangle', 0.04); }
-        else if (res.type === 'seed') { inventory.seeds++; beep(600, 0.1, 'sine', 0.05); }
-        resources.splice(i, 1);
-      }
-    }
-
-    // АКУЛЫ: патруль по маршруту → атака 1 раз → исчезновение на 25 сек
-    for (let i = sharks.length - 1; i >= 0; i--) {
-      const sh = sharks[i];
-      if (sh.hiddenTimer > 0) {
-        sh.hiddenTimer -= dt;
-        if (sh.hiddenTimer <= 0) {
-          const route = SHARK_ROUTES[sh.routeId];
-          const wp = route[Math.floor(Math.random() * route.length)];
-          sh.x = wp.x; sh.y = wp.y;
-          sh.wpIndex = (route.indexOf(wp) + 1) % route.length;
-          sh.state = 'patrol';
-          sh.hp = 3;
-        }
-        continue;
-      }
-      const dx = player.x - sh.x; const dy = player.y - sh.y;
-      const distToPlayer = Math.hypot(dx, dy);
-      if (distToPlayer < 450) sh.state = 'attack';
-      else if (sh.state === 'attack') sh.state = 'patrol';
-
-      if (sh.state === 'attack') {
-        sh.angle = Math.atan2(dy, dx);
-        sh.x += Math.cos(sh.angle) * sh.speed * 1.6 * dt;
-        sh.y += Math.sin(sh.angle) * sh.speed * 1.6 * dt;
-        if (distToPlayer < level.size + 20 && player.invuln <= 0) {
-          player.invuln = 1;
-          player.hp -= 12;
-          beep(100, 0.2, 'sawtooth', 0.1);
-          for(let j=0; j<10; j++) particles.push({ x: player.x, y: player.y, vx: rnd(-100,100), vy: rnd(-100,100), life: 0.5, maxLife: 0.5, size: 3, color: '#ef4444' });
-          sh.hiddenTimer = 25;
-          sh.hp = 3;
-        }
-      } else {
-        const route = SHARK_ROUTES[sh.routeId];
-        const wp = route[sh.wpIndex];
-        const pdx = wp.x - sh.x; const pdy = wp.y - sh.y;
-        const pdist = Math.hypot(pdx, pdy);
-        if (pdist < 40) {
-          sh.wpIndex = (sh.wpIndex + 1) % route.length;
-        } else {
-          sh.angle = Math.atan2(pdy, pdx);
-          sh.x += Math.cos(sh.angle) * sh.speed * dt;
-          sh.y += Math.sin(sh.angle) * sh.speed * dt;
-        }
-      }
-    }
-
-    // Турель
-    if (tools.turret > 0) {
-      harpoonCooldown -= dt;
-      if (harpoonCooldown <= 0) {
-        let target = null; let bestD = 500;
-        if (megalodon && megalodon.hp > 0) {
-          const d = Math.hypot(megalodon.x - player.x, megalodon.y - player.y);
-          if (d < bestD) { bestD = d; target = megalodon; }
-        }
-        for (const sh of sharks) {
-          if (sh.hiddenTimer > 0) continue;
-          const d = Math.hypot(sh.x - player.x, sh.y - player.y);
-          if (d < bestD) { bestD = d; target = sh; }
-        }
-        if (target) {
-          const angle = Math.atan2(target.y - player.y, target.x - player.x);
-          const dmg = 25 + tools.turret * 20;
-          harpoons.push({ x: player.x + Math.cos(angle) * level.size, y: player.y + Math.sin(angle) * level.size, vx: Math.cos(angle) * 900, vy: Math.sin(angle) * 900, life: 1.5, dmg, angle, isPlayerTurret: true });
-          harpoonCooldown = 1.0 - (tools.turret - 1) * 0.2;
-          beep(500, 0.06, 'square', 0.05);
-        }
-      }
-    }
-
-    // Гарпуны
-    for (let i = harpoons.length - 1; i >= 0; i--) {
-      const h = harpoons[i];
-      h.x += h.vx * dt; h.y += h.vy * dt; h.life -= dt;
-      if (megalodon && megalodon.hp > 0) {
-        if (Math.hypot(megalodon.x - h.x, megalodon.y - h.y) < megalodon.r + 10) {
-          megalodon.hp -= h.dmg; megalodon.hitFlash = 0.2;
-          harpoons.splice(i, 1);
-          beep(200, 0.1, 'sawtooth', 0.05);
-          for(let j=0; j<5; j++) particles.push({ x: h.x, y: h.y, vx: rnd(-150,150), vy: rnd(-150,150), life: 0.5, maxLife: 0.5, size: 3, color: '#ef4444' });
-          continue;
-        }
-      }
-      let hitShark = false;
-      for (let j = sharks.length - 1; j >= 0; j--) {
-        const sh = sharks[j];
-        if (sh.hiddenTimer > 0) continue;
-        if (Math.hypot(sh.x - h.x, sh.y - h.y) < 25) {
-          sh.hp -= 1;
-          harpoons.splice(i, 1);
-          beep(300, 0.15, 'square', 0.06);
-          for(let k=0; k<8; k++) particles.push({ x: h.x, y: h.y, vx: rnd(-150,150), vy: rnd(-150,150), life: 0.6, maxLife: 0.6, size: 3, color: '#ef4444' });
-          if (sh.hp <= 0) {
-            sharks.splice(j, 1);
-            game.metal += 5;
-            game.plastic += 3;
-            beep(400, 0.2, 'sine', 0.08);
-          }
-          hitShark = true;
-          break;
-        }
-      }
-      if (hitShark) continue;
-      if (h.life <= 0) harpoons.splice(i, 1);
-    }
-
-    // Мегалодон
-    if (megalodon) {
-      if (megalodon.hitFlash > 0) megalodon.hitFlash -= dt;
-      const dx = player.x - megalodon.x; const dy = player.y - megalodon.y;
-      const dist = Math.hypot(dx, dy);
-      megalodon.stateTimer -= dt;
-      if (megalodon.state === 'circling') {
-        const ta = Math.atan2(dy, dx) - Math.PI / 2;
-        megalodon.angle = ta;
-        megalodon.x += Math.cos(ta) * megalodon.speed * dt;
-        megalodon.y += Math.sin(ta) * megalodon.speed * dt;
-        if (dist > 400) {
-          megalodon.x += (dx / dist) * megalodon.speed * dt;
-          megalodon.y += (dy / dist) * megalodon.speed * dt;
-        }
-        if (megalodon.stateTimer <= 0) { megalodon.state = 'charging'; megalodon.stateTimer = 1.5; beep(100, 0.5, 'sawtooth', 0.1); }
-      } else if (megalodon.state === 'charging') {
-        if (megalodon.stateTimer <= 0.5) {
-          megalodon.angle = Math.atan2(dy, dx);
-          megalodon.x += Math.cos(megalodon.angle) * megalodon.speed * 4 * dt;
-          megalodon.y += Math.sin(megalodon.angle) * megalodon.speed * 4 * dt;
-          if (dist < megalodon.r + level.size) {
-            player.hp -= 35;
-            megalodon.state = 'stunned'; megalodon.stateTimer = 2.5;
-            beep(60, 0.4, 'sawtooth', 0.2);
-            for(let j=0; j<20; j++) particles.push({ x: player.x, y: player.y, vx: rnd(-300,300), vy: rnd(-300,300), life: 1, maxLife: 1, size: 5, color: '#ef4444' });
-          }
-        }
-      } else if (megalodon.state === 'stunned') {
-        if (megalodon.stateTimer <= 0) { megalodon.state = 'circling'; megalodon.stateTimer = 4; }
-      }
-      if (megalodon.hp <= 0) {
-        megalodon = null;
-        bossBarContainer.style.display = 'none';
-        game.isNight = false;
-        game.core += 1;
-        game.blueprints.gen = true;
-        game.wood += 300; game.metal += 200; game.plastic += 150; game.fabric += 100;
-        showToast('🔮 Энергоядро и 📜 Чертеж Генератора!', '#a855f7');
-        beep(600, 0.5, 'sine', 0.1);
-      }
-    }
-  }
-
-  else if (game.zone === 'island') {
-    if (mobs.length < 5 && Math.random() < dt * 0.5) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 200 + Math.random() * 200;
-      const mx = player.x + Math.cos(angle)*dist;
-      const my = player.y + Math.sin(angle)*dist;
-      if (Math.hypot(mx - island.x, my - island.y) < island.r * 0.85) {
-        mobs.push({ x: mx, y: my, type: 'boar', hp: 30, speed: 60, damage: 20 });
-      }
-    }
-    for (let i = ores.length - 1; i >= 0; i--) {
-      const ore = ores[i];
-      if (Math.hypot(player.x - ore.x, player.y - ore.y) < 45) {
-        ore.hp -= dt * 2;
-        if (Math.random() < dt * 8) beep(300, 0.05, 'square', 0.02);
-        if (ore.hp <= 0) {
-          if (ore.type === 'copper') game.copper += 5 + game.boatLevel;
-          else if (ore.type === 'iron') game.iron += 4 + game.boatLevel;
-          ores.splice(i, 1);
-          beep(800, 0.1, 'sine');
-        }
-      }
-    }
-  }
-
-  else if (game.zone === 'cave') {
-    const spawnRate = 0.5 + (game.caveDepth * 0.5);
-    if (mobs.length < 8 + game.caveDepth * 2 && Math.random() < dt * spawnRate) {
-      const angle = Math.random() * Math.PI * 2;
-      const dist = 400 + Math.random() * 200;
-      const hp = 15 + (game.caveDepth * 10);
-      mobs.push({ x: player.x + Math.cos(angle)*dist, y: player.y + Math.sin(angle)*dist, type: 'bat', hp, speed: 100 + game.caveDepth*20, damage: 8 + game.caveDepth*3 });
-    }
-    for (let i = ores.length - 1; i >= 0; i--) {
-      const ore = ores[i];
-      if (Math.hypot(player.x - ore.x, player.y - ore.y) < 45) {
-        ore.hp -= dt * 2;
-        if (Math.random() < dt * 8) beep(300, 0.05, 'square', 0.02);
-        if (ore.hp <= 0) {
-          if (ore.type === 'copper') game.copper += 5 + game.boatLevel;
-          else if (ore.type === 'coal') game.coal += 5 + game.boatLevel;
-          else if (ore.type === 'iron') game.iron += 4 + game.boatLevel;
-          else if (ore.type === 'gold') game.gold += 3 + Math.floor(game.boatLevel/2);
-          else if (ore.type === 'diamond') game.diamond += 1 + Math.floor(game.boatLevel/3);
-          if (game.caveDepth === 1 && !game.blueprints.drill && Math.random() < 0.2) {
-            game.blueprints.drill = true;
-            showToast('📜 НАЙДЕН ЧЕРТЕЖ: Электробур!', '#fbbf24');
-          }
-          ores.splice(i, 1);
-          beep(800, 0.1, 'sine');
-        }
-      }
-    }
-  }
-
-  for (let i = mobs.length - 1; i >= 0; i--) {
-    const m = mobs[i];
-    const dx = player.x - m.x; const dy = player.y - m.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 500) {
-      m.x += (dx/dist) * m.speed * dt;
-      m.y += (dy/dist) * m.speed * dt;
-      if (dist < 30) {
-        player.hp -= m.damage * dt;
-        if (Math.random() < dt * 2) beep(100, 0.1, 'sawtooth', 0.05);
-      }
-    }
-    if (dist > 800) mobs.splice(i, 1);
-  }
-
-  for (const b of buildings) {
-    if (b.type === 'drill') {
-      let powered = false;
-      for (const gen of buildings) {
-        if (gen.type === 'gen' && Math.hypot(b.x - gen.x, b.y - gen.y) < 250) { powered = true; break; }
-      }
-      if (powered) {
-        if (b.fuel > 0) {
-          b.timer -= dt;
-          if (b.timer <= 0) {
-            b.timer = 4; b.fuel--;
-            const r = Math.random();
-            if (r < 0.3) game.copper += 2 + game.boatLevel;
-            else if (r < 0.6) game.iron += 2 + game.boatLevel;
-            else if (r < 0.8) game.gold += 1 + Math.floor(game.boatLevel/2);
-            else game.diamond += 1 + Math.floor(game.boatLevel/3);
-            beep(400, 0.05, 'sine', 0.02);
-          }
-        } else if (game.coal > 0) {
-          game.coal -= 1; b.fuel = 5; beep(300, 0.1, 'triangle', 0.03);
-        }
-      }
-    }
-  }
-
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const pt = particles[i];
-    pt.x += pt.vx * dt; pt.y += pt.vy * dt; pt.life -= dt;
-    if (pt.life <= 0) particles.splice(i, 1);
-  }
-
-  updateUI();
+function usePotion(type) {
+  const p = G.player;
+  if (!p.inventory[type] || p.inventory[type] <= 0) return combatTurn();
+  p.inventory[type]--;
+  const heal = type === 'potion' ? 10 : 20;
+  p.hp = Math.min(p.maxHp, p.hp + heal);
+  log(`🧪 Ты выпиваешь зелье. <span class="heal">+${heal} HP</span>`, 'heal');
+  renderStats();
+  enemyTurn();
 }
 
-function getRecipeCost(recipe, currentLevel) {
-  const startLevel = (recipe.id === 'turret' || recipe.id === 'net') ? 0 : 1;
-  return recipe.costs[currentLevel - startLevel] || null;
+function enemyTurn() {
+  const p = G.player, e = G.enemy;
+  if (!G.inCombat) return;
+  let dmg = Math.max(1, e.atk - p.def + rand(-1, 2));
+  if (p.blocking) { dmg = Math.floor(dmg / 3); p.blocking = false; log('🛡️ Щит веры поглощает большую часть удара!', 'heal'); }
+  p.hp -= dmg;
+  log(`${e.emoji} ${e.name} бьёт тебя. <span class="dmg">−${dmg} HP</span>`, '');
+  renderStats();
+  if (p.hp <= 0) return loseCombat();
+  combatTurn();
 }
 
-function openCraftMenu() {
-  if (craftScreen.classList.contains('active')) return;
-  game.state = 'paused';
-  joystick.active = false; joystick.dx = 0; joystick.dy = 0;
-  renderCraftMenu();
-  craftScreen.classList.add('active');
+function winCombat() {
+  const p = G.player, e = G.enemy;
+  log(`<span class="heal">🎉 Победа! ${e.name} повержен!</span>`, '');
+  p.gold += e.gold;
+  p.exp += e.exp;
+  log(`<span class="gold">+${e.gold} золота</span>, <span class="exp">+${e.exp} опыта</span>`, '');
+  G.inCombat = false;
+  G.killed++;
+  G.enemy = null;
+  // Level up
+  while (p.exp >= p.expNext) {
+    p.exp -= p.expNext;
+    p.level++;
+    p.expNext = Math.floor(p.expNext * 1.5);
+    p.maxHp += 4; p.hp = p.maxHp;
+    p.atk += 2; p.def += 1;
+    log(`<span class="title">⭐ УРОВЕНЬ ${p.level}! HP+4, Атака+2, Защита+1</span>`, '');
+  }
+  renderStats(); saveGame();
+  const cb = G.onWin;
+  G.onWin = null;
+  if (cb) setTimeout(cb, 200);
+  else setTimeout(goVillage, 200);
 }
 
-function renderCraftMenu() {
-  craftInner.innerHTML = '';
-  const closeBtn = document.createElement('button');
-  closeBtn.className = 'craft-close-btn';
-  closeBtn.textContent = '✕ ЗАКРЫТЬ';
-  closeBtn.addEventListener('click', closeCraftMenu);
-  craftInner.appendChild(closeBtn);
+function loseCombat() {
+  const p = G.player;
+  G.inCombat = false;
+  log('<span class="dmg">💀 Ты пал в бою...</span>', '');
+  const loss = Math.min(p.gold, Math.floor(p.gold / 3));
+  p.gold -= loss;
+  p.hp = Math.floor(p.maxHp / 2);
+  log(`Тебя спасли крестьяне. Потеряно <span class="gold">${loss} золота</span>. HP восстановлено наполовину.`, 'sys');
+  G.enemy = null;
+  renderStats(); saveGame();
+  setTimeout(goVillage, 300);
+}
 
-  const h = document.createElement('h1');
-  h.className = 'title';
-  h.style.color = '#8b5cf6';
-  h.textContent = '🛠️ ВЕРСТАК';
-  craftInner.appendChild(h);
-
-  // Лодка
-  if (game.boatLevel < BOAT_LEVELS.length) {
-    const next = BOAT_LEVELS[game.boatLevel];
-    const cur = BOAT_LEVELS[game.boatLevel - 1];
-    const boatCard = document.createElement('div');
-    boatCard.className = 'craft-item boat-card';
-    const canAfford = game.wood >= next.costW && game.metal >= next.costM;
-    boatCard.innerHTML = `
-      <div class="craft-title"><span>🚤 ${cur.name} → ${next.name}</span></div>
-      <div class="craft-desc">Скорость: ${cur.speed} → ${next.speed}. Лут: +${game.boatLevel * 2} к каждому ресурсу.</div>
-      <div class="craft-cost">Стоимость: 🪵${next.costW} ⚙️${next.costM}</div>
-      <button class="craft-btn" id="boatUpgradeBtn" ${canAfford ? '' : 'disabled'}>УЛУЧШИТЬ ЛОДКУ</button>`;
-    craftInner.appendChild(boatCard);
-    boatCard.querySelector('#boatUpgradeBtn').addEventListener('click', () => { upgradeBoat(); renderCraftMenu(); });
+function flee() {
+  if (G.enemy && G.enemy.boss) {
+    log('От Морганы не сбежать!', 'sys');
+    return enemyTurn();
+  }
+  if (Math.random() < 0.6) {
+    log('Ты сбежал с поля боя.', 'sys');
+    G.inCombat = false; G.enemy = null;
+    setTimeout(goVillage, 200);
   } else {
-    const boatCard = document.createElement('div');
-    boatCard.className = 'craft-item boat-card';
-    boatCard.innerHTML = `<div class="craft-title"><span>🚤 Мега-Яхта (МАКС)</span></div><div class="craft-desc">Ты достиг максимума!</div>`;
-    craftInner.appendChild(boatCard);
+    log('Сбежать не удалось!', 'sys');
+    enemyTurn();
   }
+}
 
-  CRAFT_RECIPES.forEach(r => {
-    const lvl = tools[r.id];
-    const isMax = lvl >= r.maxLvl;
-    const item = document.createElement('div');
-    item.className = 'craft-item';
-    const title = document.createElement('div');
-    title.className = 'craft-title';
-    title.innerHTML = `<span>${r.name} (Ур. ${lvl}/${r.maxLvl})</span>`;
-    item.appendChild(title);
-    const desc = document.createElement('div');
-    desc.className = 'craft-desc'; desc.textContent = r.desc;
-    item.appendChild(desc);
-    if (!isMax) {
-      const cost = getRecipeCost(r, lvl);
-      if (cost) {
-        const canAfford = (game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0));
-        const costDiv = document.createElement('div');
-        costDiv.className = 'craft-cost';
-        costDiv.innerHTML = `Стоимость: ${cost.w ? `🪵${cost.w} ` : ''}${cost.m ? `⚙️${cost.m} ` : ''}${cost.p ? `🧴${cost.p} ` : ''}${cost.f ? `🧵${cost.f}` : ''}`;
-        item.appendChild(costDiv);
-        const btn = document.createElement('button');
-        btn.className = 'craft-btn';
-        btn.textContent = 'УЛУЧШИТЬ';
-        btn.disabled = !canAfford;
-        btn.addEventListener('click', () => doCraft(r.id));
-        item.appendChild(btn);
-      }
-    } else {
-      const maxDiv = document.createElement('div');
-      maxDiv.className = 'craft-cost';
-      maxDiv.style.color = '#22c55e';
-      maxDiv.textContent = 'МАКС. УРОВЕНЬ';
-      item.appendChild(maxDiv);
-    }
-    craftInner.appendChild(item);
-  });
+// ==================== ЛЕС ====================
+function forest() {
+  G.scene = 'forest';
+  log('🌲 Ты входишь в тёмный лес. Ветки шумят, где-то воет волк...', 'sys');
+  setActions([
+    {label:'🐺 Идти вглубь (волк)', action:() => startCombat('wolf', goVillage)},
+    {label:'🗡️ Найти разбойника', action:() => startCombat('bandit', goVillage)},
+    {label:'🚪 Вернуться в деревню', action:() => goVillage(), cls:'full'}
+  ]);
+}
 
-  if (game.core > 0) {
-    const h2 = document.createElement('h2');
-    h2.style.color = '#a855f7';
-    h2.style.marginTop = '20px'; h2.style.marginBottom = '12px';
-    h2.textContent = '⚡ ИНДУСТРИЯ';
-    craftInner.appendChild(h2);
-    BUILD_RECIPES.forEach(r => {
-      const hasBp = game.blueprints[r.reqBp];
-      const c = r.costs[0];
-      const canAfford = (game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0));
-      const item = document.createElement('div');
-      item.className = 'craft-item';
-      if (!hasBp) item.style.opacity = '0.6';
-      const title = document.createElement('div');
-      title.className = 'craft-title';
-      title.innerHTML = `<span>${r.name}</span>${!hasBp ? '<span style="font-size:12px; color:#ef4444;">📜 НЕТ ЧЕРТЕЖА</span>' : ''}`;
-      item.appendChild(title);
-      const desc = document.createElement('div');
-      desc.className = 'craft-desc'; desc.textContent = r.desc;
-      item.appendChild(desc);
-      const costDiv = document.createElement('div');
-      costDiv.className = 'craft-cost';
-      costDiv.innerHTML = `Стоимость: ${c.core ? `🔮${c.core} ` : ''}${c.iron ? `⛓️${c.iron} ` : ''}${c.copper ? `🟠${c.copper} ` : ''}${c.m ? `⚙️${c.m}` : ''}`;
-      item.appendChild(costDiv);
-      const btn = document.createElement('button');
-      btn.className = 'craft-btn';
-      btn.textContent = 'ПОСТРОИТЬ';
-      btn.disabled = !(canAfford && hasBp);
-      btn.addEventListener('click', () => buildItem(r.id));
-      item.appendChild(btn);
-      craftInner.appendChild(item);
-    });
-  }
+// ==================== КВЕСТ ====================
+function questCow() {
+  if (G.flags.cowDone) { log('Квест уже выполнен.', 'sys'); return goVillage(); }
+  log('📜 <b>Квест «Зорька»:</b> Тимка просит спасти корову. Разбойники в лесу.', 'title');
+  setActions([
+    {label:'⚔️ Сразиться с разбойником', action:() => startCombat('bandit', () => {
+      G.flags.cowDone = true;
+      const reward = 15;
+      G.player.gold += reward;
+      log(`🐄 Ты спас Зорьку! Мельничиха благодарит тебя. <span class="gold">+${reward} золота</span>`, 'heal');
+      renderStats(); saveGame(); goVillage();
+    })},
+    {label:'🚪 Позже', action:() => goVillage(), cls:'full'}
+  ]);
+}
 
-  const closeBtn2 = document.createElement('button');
-  closeBtn2.className = 'btn btn-gray';
-  closeBtn2.style.marginTop = '20px';
-  closeBtn2.textContent = 'ЗАКРЫТЬ';
-  closeBtn2.addEventListener('click', closeCraftMenu);
-  craftInner.appendChild(closeBtn2);
-
-  // === АДМИН ПАНЕЛЬ ===
-  if (!game.isAdmin) {
-    const adminSection = document.createElement('div');
-    adminSection.style.cssText = 'margin-top: 30px; padding-top: 20px; border-top: 1px solid #334155;';
-    adminSection.innerHTML = `
-      <div style="color:#64748b;font-size:12px;margin-bottom:8px;text-align:center;">🔑 Секретное поле</div>
-      <input type="password" id="adminCodeInput" placeholder="Введите код..." style="width:100%;padding:12px;border-radius:10px;border:1px solid #475569;background:#1e293b;color:#fff;font-size:14px;margin-bottom:8px;text-align:center;"/>
-      <button class="btn btn-gray" id="adminLoginBtn" style="padding:12px;font-size:14px;">Войти</button>
-    `;
-    craftInner.appendChild(adminSection);
-    document.getElementById('adminLoginBtn').addEventListener('click', () => {
-      const code = document.getElementById('adminCodeInput').value.trim();
-      if (code === '2v3l8a8d') {
-        game.isAdmin = true;
-        showToast('🔓 Админ доступ получен!', '#22c55e');
-        renderCraftMenu();
-      } else {
-        showToast('❌ Неверный код', '#ef4444');
-      }
-    });
+// ==================== ЗАМОК ====================
+function castle() {
+  G.scene = 'castle';
+  log('🏰 Ты у ворот Центрального замка. Стража смотрит настороженно.', 'sys');
+  const buttons = [
+    {label:'🛡️ Сразиться со стражником', action:() => startCombat('guard', goVillage)},
+    {label:'⚔️ Сразиться с тёмным рыцарем', action:() => startCombat('darkknight', goVillage)},
+    {label:'🚪 Уйти в деревню', action:() => goVillage(), cls:'full'}
+  ];
+  if (G.player.level >= 3) {
+    buttons.push({label:'👑 БОСС: Моргана', action:() => startCombat('morgana', () => {
+      log('<span class="title">🏆 ТЫ ПОБЕДИЛ МОРГАНУ! Древняя тьма изгнана, Альдория спасена!</span>', '');
+      log('Ты — легенда. Конец истории (пока что).', 'sys');
+      G.flags.won = true;
+      setActions([
+        {label:'🔄 Играть снова', action:() => { clearSave(); location.reload(); }, cls:'full'}
+      ]);
+    }), cls:'danger full'});
   } else {
-    const adminPanel = document.createElement('div');
-    adminPanel.style.cssText = 'margin-top: 30px; padding: 15px; border: 2px solid #22c55e; border-radius: 14px; background: rgba(34,197,94,0.08);';
-    adminPanel.innerHTML = `<h2 style="color:#22c55e;margin-bottom:14px;text-align:center;">🔓 АДМИН-ПАНЕЛЬ</h2>`;
-    craftInner.appendChild(adminPanel);
-    const resList = [
-      { key: 'wood', label: '🪵 Дерево', color: '#fbbf24' },
-      { key: 'metal', label: '⚙️ Металл', color: '#cbd5e1' },
-      { key: 'plastic', label: '🧴 Пластик', color: '#38bdf8' },
-      { key: 'fabric', label: '🧵 Ткань', color: '#d8b4fe' },
-      { key: 'copper', label: '🟠 Медь', color: '#f97316' },
-      { key: 'iron', label: '⛓️ Железо', color: '#94a3b8' },
-      { key: 'coal', label: '⚫ Уголь', color: '#cbd5e1' },
-      { key: 'gold', label: '🟡 Золото', color: '#fbbf24' },
-      { key: 'diamond', label: '💎 Алмаз', color: '#67e8f9' }
-    ];
-    resList.forEach(r => {
-      const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px;margin-bottom:6px;background:#1e293b;border-radius:8px;';
-      row.innerHTML = `<span style="font-weight:800;color:${r.color};font-size:13px;">${r.label}</span>`;
-      const btnWrap = document.createElement('div');
-      btnWrap.style.cssText = 'display:flex;gap:5px;';
-      [10, 100, 1000].forEach(amount => {
-        const btn = document.createElement('button');
-        btn.textContent = `+${amount}`;
-        btn.style.cssText = 'padding:5px 9px;border-radius:6px;border:none;background:#22c55e;color:#fff;font-weight:800;font-size:11px;';
-        btn.addEventListener('click', () => {
-          game[r.key] += amount;
-          if (r.key === 'gold') goldRow.style.display = 'block';
-          if (r.key === 'diamond') diamondRow.style.display = 'block';
-          updateUI();
-          beep(800, 0.05, 'sine', 0.05);
-        });
-        btnWrap.appendChild(btn);
-      });
-      row.appendChild(btnWrap);
-      adminPanel.appendChild(row);
-    });
-    const coreRow2 = document.createElement('div');
-    coreRow2.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px;margin-bottom:6px;background:#1e293b;border-radius:8px;';
-    coreRow2.innerHTML = `<span style="font-weight:800;color:#a855f7;font-size:13px;">🔮 Ядро</span>`;
-    const coreBtnWrap = document.createElement('div');
-    coreBtnWrap.style.cssText = 'display:flex;gap:5px;';
-    [1, 5, 10].forEach(amount => {
-      const btn = document.createElement('button');
-      btn.textContent = `+${amount}`;
-      btn.style.cssText = 'padding:5px 9px;border-radius:6px;border:none;background:#a855f7;color:#fff;font-weight:800;font-size:11px;';
-      btn.addEventListener('click', () => {
-        game.core += amount;
-        coreRow.style.display = 'block';
-        updateUI();
-        beep(800, 0.05, 'sine', 0.05);
-      });
-      coreBtnWrap.appendChild(btn);
-    });
-    coreRow2.appendChild(coreBtnWrap);
-    adminPanel.appendChild(coreRow2);
-    const bpRow = document.createElement('div');
-    bpRow.style.cssText = 'padding:8px;margin-bottom:6px;background:#1e293b;border-radius:8px;';
-    bpRow.innerHTML = `<div style="font-weight:800;color:#fbbf24;font-size:13px;margin-bottom:8px;">📜 Чертежи</div>`;
-    const bpBtnWrap = document.createElement('div');
-    bpBtnWrap.style.cssText = 'display:flex;gap:6px;';
-    const bpGen = document.createElement('button');
-    bpGen.textContent = 'Генератор';
-    bpGen.style.cssText = 'flex:1;padding:6px;border-radius:6px;border:none;background:#22c55e;color:#fff;font-weight:800;font-size:11px;';
-    bpGen.addEventListener('click', () => {
-      game.blueprints.gen = true;
-      beep(800, 0.1, 'sine', 0.05);
-      showToast('📜 Чертеж Генератора выдан', '#22c55e');
-      renderCraftMenu();
-    });
-    const bpDrill = document.createElement('button');
-    bpDrill.textContent = 'Электробур';
-    bpDrill.style.cssText = 'flex:1;padding:6px;border-radius:6px;border:none;background:#22c55e;color:#fff;font-weight:800;font-size:11px;';
-    bpDrill.addEventListener('click', () => {
-      game.blueprints.drill = true;
-      beep(800, 0.1, 'sine', 0.05);
-      showToast('📜 Чертеж Электробура выдан', '#22c55e');
-      renderCraftMenu();
-    });
-    bpBtnWrap.appendChild(bpGen);
-    bpBtnWrap.appendChild(bpDrill);
-    bpRow.appendChild(bpBtnWrap);
-    adminPanel.appendChild(bpRow);
+    buttons.push({label:'👑 Босс (нужен 3 ур.)', action:() => log('Слишком слаб. Достигни 3 уровня.', 'sys'), disabled:true, cls:'danger full'});
   }
+  setActions(buttons);
 }
 
-function doCraft(id) {
-  const recipe = CRAFT_RECIPES.find(r => r.id === id);
-  if (!recipe) return;
-  const lvl = tools[id];
-  if (lvl >= recipe.maxLvl) return;
-  const cost = getRecipeCost(recipe, lvl);
-  if (!cost) return;
-  if ((game.wood >= (cost.w||0)) && (game.metal >= (cost.m||0)) && (game.plastic >= (cost.p||0)) && (game.fabric >= (cost.f||0))) {
-    game.wood -= (cost.w||0); game.metal -= (cost.m||0); game.plastic -= (cost.p||0); game.fabric -= (cost.f||0);
-    tools[id]++;
-    beep(600, 0.1, 'square', 0.08);
-    updateUI(); renderCraftMenu();
+// ==================== СОХРАНЕНИЕ ====================
+function saveGame() {
+  try {
+    localStorage.setItem('aldoria_save', JSON.stringify({
+      player: G.player, flags: G.flags, killed: G.killed
+    }));
+  } catch(e) {}
+}
+function loadGame() {
+  try {
+    const raw = localStorage.getItem('aldoria_save');
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (!data.player) return false;
+    G.player = data.player;
+    G.flags = data.flags || {};
+    G.killed = data.killed || 0;
+    return true;
+  } catch(e) { return false; }
+}
+function clearSave() { try { localStorage.removeItem('aldoria_save'); } catch(e){} }
+
+// ==================== СТАРТ ====================
+function startScreen() {
+  G.player = null;
+  renderStats();
+  G.logLines = [];
+  log('<span class="title">⚔️ ХРОНИКИ АЛЬДОРИИ ⚔️</span>', '');
+  log('Тёмная сила пробудилась в Старой крепости. Деревня Заречье в опасности. Только ты можешь спасти королевство.', 'sys');
+
+  const buttons = [];
+  if (loadGame()) {
+    buttons.push({label:'📂 Продолжить', action:() => {
+      renderStats();
+      log(`С возвращением, <b>${G.player.name}</b>.`, 'title');
+      goVillage();
+    }, cls:'full'});
   }
+  buttons.push({label:'🛡️ Рыцарь (HP30, Атк6, Защ5)', action:() => createPlayer('', 'knight'), cls:'full'});
+  buttons.push({label:'🗡️ Плут (HP22, Атк8, Защ2)', action:() => createPlayer('', 'rogue'), cls:'full'});
+  buttons.push({label:'🧙 Маг (HP20, Атк7, Защ1)', action:() => createPlayer('', 'mage'), cls:'full'});
+  setActions(buttons);
 }
 
-function buildItem(id) {
-  const recipe = BUILD_RECIPES.find(r => r.id === id);
-  if (!recipe || !game.blueprints[recipe.reqBp]) return;
-  const c = recipe.costs[0];
-  if ((game.core >= (c.core||0)) && (game.iron >= (c.iron||0)) && (game.copper >= (c.copper||0)) && (game.metal >= (c.m||0))) {
-    if (game.core > 0) game.core -= (c.core||0);
-    game.iron -= (c.iron||0); game.copper -= (c.copper||0); game.metal -= (c.m||0);
-    const bx = player.x + Math.cos(player.angle) * 70;
-    const by = player.y + Math.sin(player.angle) * 70;
-    buildings.push({ x: bx, y: by, type: id, timer: 0, fuel: id === 'drill' ? 0 : undefined });
-    beep(500, 0.2, 'sine', 0.1);
-    updateUI(); renderCraftMenu();
-  }
-}
-
-function closeCraftMenu() {
-  craftScreen.classList.remove('active');
-  game.state = 'playing';
-  lastTime = performance.now();
-}
-
-interactBtn.addEventListener('click', () => {
-  if (player.interactMode === 'island') {
-    player.isOnFoot = true; player.x = boatDock.x; player.y = boatDock.y - 60;
-    game.zone = 'island';
-    if (ores.length === 0) generateIslandOres(); mobs = [];
-    beep(300, 0.2, 'sine');
-  } else if (player.interactMode === 'boat') {
-    player.isOnFoot = false; player.x = boatDock.x; player.y = boatDock.y - 150;
-    game.zone = 'ocean'; mobs = []; sharks = [];
-    beep(400, 0.2, 'sine');
-  } else if (player.interactMode === 'cave') {
-    game.zone = 'cave'; game.caveDepth = 1;
-    player.x = 0; player.y = 400; generateCaveOres(1); mobs = [];
-    beep(150, 0.5, 'sawtooth');
-  } else if (player.interactMode === 'elevator') {
-    game.caveDepth++; generateCaveOres(game.caveDepth);
-    player.x = 0; player.y = 400; mobs = [];
-    beep(200, 0.5, 'sawtooth'); showToast(`Спуск на ${game.caveDepth}`, '#38bdf8');
-  } else if (player.interactMode === 'exitCave') {
-    game.zone = 'island'; player.x = caveEntrance.x; player.y = caveEntrance.y + 60; mobs = [];
-    if (ores.length === 0) generateIslandOres();
-    beep(300, 0.2, 'sine');
-  }
-});
-
-craftBtn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openCraftMenu(); });
-fishBtn.addEventListener('click', () => { if (fishing.state === 'idle' && !player.isOnFoot) { fishing.state = 'casting'; fishing.timer = 0.5; beep(300, 0.1, 'sine'); updateUI(); } });
-purifyBtn.addEventListener('click', () => { if (purifyTimer <= 0 && !player.isOnFoot) { purifyTimer = Math.max(1, 4.5 - tools.purifier); beep(500, 0.1, 'sawtooth'); updateUI(); } });
-plantBtn.addEventListener('click', () => { if (inventory.seeds > 0 && game.boatLevel >= 2 && !player.isOnFoot) { inventory.seeds--; crops.push({ progress: 0 }); beep(400, 0.1, 'triangle'); updateUI(); } });
-
-pauseBtn.addEventListener('click', () => {
-  if (game.state === 'playing') {
-    game.state = 'paused';
-    joystick.active = false; joystick.dx = 0; joystick.dy = 0;
-    overlayContent.innerHTML = `<h1 class="title">ПАУЗА</h1><button class="btn" id="resumeBtn">▶ ПРОДОЛЖИТЬ</button><button class="btn btn-gray" id="menuBtn">В МЕНЮ</button>`;
-    overlay.classList.add('active');
-    document.getElementById('resumeBtn').addEventListener('click', () => { game.state = 'playing'; overlay.classList.remove('active'); lastTime = performance.now(); });
-    document.getElementById('menuBtn').addEventListener('click', showMenu);
-  }
-});
-document.addEventListener('contextmenu', e => e.preventDefault());
- 
-function drawOceanBg() {
-  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-  if (game.isNight) { bgGrad.addColorStop(0, '#0b1220'); bgGrad.addColorStop(0.5, '#020617'); bgGrad.addColorStop(1, '#000000'); }
-  else { bgGrad.addColorStop(0, '#1a5f8a'); bgGrad.addColorStop(0.5, '#0c4a6e'); bgGrad.addColorStop(1, '#082f49'); }
-  ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, W, H);
-  const cx = game.camera.x, cy = game.camera.y, zoom = game.camera.zoom;
-  ctx.lineWidth = 3;
-  ctx.strokeStyle = game.isNight ? 'rgba(56, 189, 248, 0.08)' : 'rgba(255, 255, 255, 0.15)';
-  ctx.beginPath();
-  const s1 = 180, o1x = (cx * zoom) % s1, o1y = (cy * zoom) % s1;
-  for (let x = -s1; x < W + s1; x += s1) {
-    for (let y = -s1; y < H + s1; y += s1) {
-      const px = x - o1x + Math.sin((y + game.time*50)*0.01)*20;
-      const py = y - o1y + Math.cos((x + game.time*50)*0.01)*20;
-      ctx.moveTo(px - 40, py); ctx.quadraticCurveTo(px, py - 12, px + 40, py);
-    }
-  }
-  ctx.stroke();
-  if (!game.isNight) {
-    for (let i = 0; i < 30; i++) {
-      const bx = (pseudo(i*7) * W + game.time * 15 * (0.5 + pseudo(i))) % W;
-      const by = (pseudo(i*13) * H + game.time * 8 * (0.5 + pseudo(i*3))) % H;
-      const alpha = 0.3 + 0.5 * Math.sin(game.time * 3 + i);
-      ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, alpha) * 0.4})`;
-      ctx.beginPath(); ctx.ellipse(bx, by, 12, 3, 0, 0, Math.PI*2); ctx.fill();
-    }
-  }
-  if (game.isNight) {
-    ctx.fillStyle = 'rgba(255, 250, 205, 0.85)';
-    ctx.beginPath(); ctx.arc(W - 80, 100, 40, 0, Math.PI*2); ctx.fill();
-    for (let i = 0; i < 80; i++) {
-      const sx = pseudo(i) * W, sy = pseudo(i*3) * H * 0.9;
-      const blink = 0.5 + 0.5 * Math.sin(game.time * 2 + i);
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.3 + blink * 0.6})`;
-      ctx.fillRect(sx, sy, pseudo(i*5) > 0.9 ? 2.5 : 1, pseudo(i*5) > 0.9 ? 2.5 : 1);
-    }
-  }
-}
-
-function drawMountains() {
-  for (const m of mountains) {
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-    ctx.beginPath(); ctx.ellipse(m.x, m.y + m.size * 0.3, m.size * 0.9, m.size * 0.25, 0, 0, Math.PI*2); ctx.fill();
-    const grad = ctx.createLinearGradient(m.x - m.size, m.y + m.size*0.5, m.x + m.size, m.y - m.size);
-    grad.addColorStop(0, '#1e293b'); grad.addColorStop(0.5, '#334155'); grad.addColorStop(1, '#64748b');
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.moveTo(m.x - m.size, m.y + m.size*0.5);
-    ctx.lineTo(m.x, m.y - m.size);
-    ctx.lineTo(m.x + m.size, m.y + m.size*0.5);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#f1f5f9';
-    ctx.beginPath();
-    ctx.moveTo(m.x - m.size*0.25, m.y - m.size*0.55);
-    ctx.lineTo(m.x, m.y - m.size);
-    ctx.lineTo(m.x + m.size*0.25, m.y - m.size*0.55);
-    ctx.lineTo(m.x + m.size*0.1, m.y - m.size*0.4);
-    ctx.lineTo(m.x - m.size*0.1, m.y - m.size*0.5);
-    ctx.closePath(); ctx.fill();
-  }
-}
-
-function drawIsland() {
-  ctx.fillStyle = 'rgba(255, 224, 130, 0.3)';
-  ctx.beginPath(); ctx.arc(island.x, island.y, island.r + 40, 0, Math.PI*2); ctx.fill();
-  const sandGrad = ctx.createRadialGradient(island.x, island.y, island.r*0.7, island.x, island.y, island.r);
-  sandGrad.addColorStop(0, '#fcd34d'); sandGrad.addColorStop(1, '#d97706');
-  ctx.fillStyle = sandGrad;
-  ctx.beginPath(); ctx.arc(island.x, island.y, island.r, 0, Math.PI*2); ctx.fill();
-  const grassGrad = ctx.createRadialGradient(island.x, island.y, 0, island.x, island.y, island.r*0.85);
-  grassGrad.addColorStop(0, '#4ade80'); grassGrad.addColorStop(0.7, '#22c55e'); grassGrad.addColorStop(1, '#166534');
-  ctx.fillStyle = grassGrad;
-  ctx.beginPath(); ctx.arc(island.x, island.y, island.r * 0.85, 0, Math.PI*2); ctx.fill();
-  for (let i = 0; i < 6; i++) {
-    const angle = pseudo(i*17) * Math.PI * 2;
-    const r = 80 + pseudo(i*23) * island.r * 0.55;
-    drawPalmTree(island.x + Math.cos(angle) * r, island.y + Math.sin(angle) * r, i);
-  }
-  ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(caveEntrance.x, caveEntrance.y, 45, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(caveEntrance.x, caveEntrance.y, 30, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#78350f';
-  ctx.fillRect(boatDock.x - 45, boatDock.y - 18, 90, 36);
-  for (let i = 0; i < 8; i++) {
-    ctx.strokeStyle = i % 2 === 0 ? '#5a2d0c' : '#92400e'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(boatDock.x - 45 + i * 11, boatDock.y - 18); ctx.lineTo(boatDock.x - 45 + i * 11, boatDock.y + 18); ctx.stroke();
-  }
-}
-
-function drawPalmTree(x, y, seed) {
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-  ctx.beginPath(); ctx.ellipse(x + 10, y + 10, 25, 10, 0, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = '#78350f'; ctx.lineWidth = 6; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 8, y - 25, x + 5, y - 50); ctx.stroke();
-  const topX = x + 5, topY = y - 50;
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2 + Math.PI/2 + pseudo(seed*7 + i) * 0.3;
-    const len = 25 + pseudo(seed*11 + i) * 12;
-    const endX = topX + Math.cos(a) * len;
-    const endY = topY + Math.sin(a) * len * 0.6;
-    ctx.fillStyle = i % 2 === 0 ? '#16a34a' : '#15803d';
-    ctx.beginPath();
-    ctx.moveTo(topX, topY);
-    ctx.quadraticCurveTo((topX + endX)/2 + Math.cos(a+Math.PI/2)*8, (topY + endY)/2 + Math.sin(a+Math.PI/2)*8, endX, endY);
-    ctx.quadraticCurveTo((topX + endX)/2, (topY + endY)/2, topX, topY);
-    ctx.fill();
-  }
-}
-
-function drawNet() {
-  if (tools.net === 0) return;
-  const level = BOAT_LEVELS[game.boatLevel - 1];
-  const netLen = 60 + tools.net * 25;
-  const netWidth = 20 + tools.net * 12;
-  const startW = level.size * 0.55;
-  ctx.save();
-  ctx.fillStyle = 'rgba(148, 163, 184, 0.15)';
-  ctx.beginPath();
-  ctx.moveTo(-startW, level.size*1.1); ctx.lineTo(startW, level.size*1.1);
-  ctx.lineTo(netWidth, level.size*1.1 + netLen); ctx.lineTo(-netWidth, level.size*1.1 + netLen);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.7)'; ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(-startW, level.size*1.1); ctx.lineTo(startW, level.size*1.1);
-  ctx.lineTo(netWidth, level.size*1.1 + netLen); ctx.lineTo(-netWidth, level.size*1.1 + netLen);
-  ctx.closePath(); ctx.stroke();
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)'; ctx.lineWidth = 1;
-  for (let i = 1; i < 5; i++) {
-    const t = i / 5;
-    const y = level.size*1.1 + netLen * t;
-    const w = startW + (netWidth - startW) * t;
-    ctx.beginPath(); ctx.moveTo(-w, y); ctx.lineTo(w, y); ctx.stroke();
-  }
-  ctx.fillStyle = '#f97316';
-  for (let i = -1; i <= 1; i++) {
-    ctx.beginPath(); ctx.arc(i * netWidth * 0.9, level.size*1.1 + netLen, 3, 0, Math.PI*2); ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawBoat() {
-  const level = BOAT_LEVELS[game.boatLevel - 1];
-  ctx.save();
-  ctx.translate(player.x, player.y);
-  ctx.rotate(player.angle + Math.PI/2);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-  ctx.beginPath(); ctx.ellipse(6, 6, level.size * 0.9, level.size * 1.5, 0, 0, Math.PI*2); ctx.fill();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.ellipse(0, 0, level.size*1.2, level.size*1.8, 0, 0, Math.PI*2); ctx.stroke();
-
-  if (game.boatLevel === 1) {
-    for (let i = -2; i <= 2; i++) {
-      const g = ctx.createLinearGradient(i*9, -level.size*1.5, i*9, level.size*1.5);
-      g.addColorStop(0, '#92400e'); g.addColorStop(0.5, '#78350f'); g.addColorStop(1, '#5a2d0c');
-      ctx.fillStyle = g; ctx.fillRect(i*9 - 4, -level.size*1.5, 8, level.size*3);
-      ctx.strokeStyle = '#451a03'; ctx.lineWidth = 1; ctx.strokeRect(i*9 - 4, -level.size*1.5, 8, level.size*3);
-    }
-    ctx.strokeStyle = '#a16207'; ctx.lineWidth = 2.5;
-    for (let i = 0; i < 2; i++) {
-      const y = -level.size*0.8 + i * level.size*1.2;
-      ctx.beginPath(); ctx.moveTo(-level.size*1.2, y); ctx.lineTo(level.size*1.2, y); ctx.stroke();
-    }
-  } else if (game.boatLevel === 2) {
-    const innerGrad = ctx.createRadialGradient(0, 0, 5, 0, 0, level.size*1.4);
-    innerGrad.addColorStop(0, '#5a2d0c'); innerGrad.addColorStop(1, '#78350f');
-    ctx.fillStyle = innerGrad;
-    ctx.beginPath();
-    ctx.moveTo(0, -level.size*1.6);
-    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
-    ctx.lineTo(-level.size*0.8, level.size*1.2);
-    ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
-    ctx.fill();
-    ctx.strokeStyle = '#b45309'; ctx.lineWidth = 4; ctx.stroke();
-    for (let i = 0; i < 2; i++) {
-      const sy = -5 + i * 20;
-      ctx.fillStyle = '#d97706'; ctx.fillRect(-level.size*0.6, sy, level.size*1.2, 6);
-    }
-    ctx.strokeStyle = '#451a03'; ctx.lineWidth = 4; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(-level.size*0.4, 10); ctx.lineTo(-level.size*1.3, 40); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(level.size*0.4, 10); ctx.lineTo(level.size*1.3, 40); ctx.stroke();
-  } else if (game.boatLevel === 3) {
-    const hullGrad = ctx.createLinearGradient(-level.size, 0, level.size, 0);
-    hullGrad.addColorStop(0, '#1e293b'); hullGrad.addColorStop(0.5, '#334155'); hullGrad.addColorStop(1, '#0f172a');
-    ctx.fillStyle = hullGrad;
-    ctx.beginPath();
-    ctx.moveTo(0, -level.size*1.6);
-    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
-    ctx.lineTo(-level.size*0.8, level.size*1.2);
-    ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
-    ctx.fill();
-    ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5; ctx.stroke();
-    ctx.fillStyle = '#1e293b'; ctx.fillRect(-level.size*0.5, -level.size*0.5, level.size, level.size*0.8);
-    const glassGrad = ctx.createLinearGradient(0, -level.size*0.5, 0, -level.size*0.1);
-    glassGrad.addColorStop(0, 'rgba(56, 189, 248, 0.8)'); glassGrad.addColorStop(1, 'rgba(14, 165, 233, 0.6)');
-    ctx.fillStyle = glassGrad; ctx.fillRect(-level.size*0.4, -level.size*0.4, level.size*0.8, level.size*0.3);
-    ctx.fillStyle = '#475569'; ctx.fillRect(-level.size*0.3, level.size*1.2, level.size*0.6, level.size*0.3);
-  } else if (game.boatLevel === 4) {
-    const hullGrad = ctx.createLinearGradient(-level.size, 0, level.size, 0);
-    hullGrad.addColorStop(0, '#cbd5e1'); hullGrad.addColorStop(0.5, '#ffffff'); hullGrad.addColorStop(1, '#94a3b8');
-    ctx.fillStyle = hullGrad;
-    ctx.beginPath();
-    ctx.moveTo(0, -level.size*1.6);
-    ctx.quadraticCurveTo(level.size, -level.size*0.5, level.size*0.8, level.size*1.2);
-    ctx.lineTo(-level.size*0.8, level.size*1.2);
-    ctx.quadraticCurveTo(-level.size, -level.size*0.5, 0, -level.size*1.6);
-    ctx.fill();
-    ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(-level.size*0.75, level.size*0.7); ctx.lineTo(level.size*0.75, level.size*0.7); ctx.stroke();
-    ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-level.size*0.6, -level.size*0.8, level.size*1.2, level.size*0.8);
-    ctx.fillStyle = '#0ea5e9';
-    for (let i = -1; i <= 1; i++) { ctx.beginPath(); ctx.arc(i*level.size*0.3, -level.size*0.4, level.size*0.1, 0, Math.PI*2); ctx.fill(); }
-  } else if (game.boatLevel === 5) {
-    const hullGrad = ctx.createLinearGradient(-level.size*1.1, 0, level.size*1.1, 0);
-    hullGrad.addColorStop(0, '#94a3b8'); hullGrad.addColorStop(0.5, '#ffffff'); hullGrad.addColorStop(1, '#64748b');
-    ctx.fillStyle = hullGrad;
-    ctx.beginPath();
-    ctx.moveTo(0, -level.size*1.8);
-    ctx.quadraticCurveTo(level.size*1.1, -level.size*0.5, level.size*0.9, level.size*1.2);
-    ctx.lineTo(-level.size*0.9, level.size*1.2);
-    ctx.quadraticCurveTo(-level.size*1.1, -level.size*0.5, 0, -level.size*1.8);
-    ctx.fill();
-    ctx.strokeStyle = '#475569'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.strokeStyle = '#1e3a8a'; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(-level.size*0.85, level.size*0.6); ctx.lineTo(level.size*0.85, level.size*0.6); ctx.stroke();
-    ctx.fillStyle = '#f1f5f9'; ctx.fillRect(-level.size*0.75, -level.size*1.2, level.size*1.5, level.size*0.8);
-    ctx.fillStyle = '#e2e8f0'; ctx.fillRect(-level.size*0.5, -level.size*1.6, level.size, level.size*0.4);
-    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(0, -level.size*0.85, level.size*0.28, 0, Math.PI*2); ctx.stroke();
-    for (let i = -2; i <= 2; i++) {
-      const wx = i * level.size * 0.22, wy = level.size*0.15;
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.95)';
-      ctx.fillRect(wx - level.size*0.06, wy - level.size*0.04, level.size*0.12, level.size*0.06);
-    }
-  }
-
-  if (game.zone === 'ocean' && crops.length > 0) {
-    for (let i = 0; i < crops.length; i++) {
-      const cx = -level.size*0.6 + (i * 15) % level.size;
-      const cy = level.size*0.4;
-      ctx.fillStyle = '#451a03'; ctx.fillRect(cx - 1, cy - 1, 14, 14);
-      ctx.fillStyle = '#1f2937'; ctx.fillRect(cx + 1, cy + 1, 10, 10);
-      const h = 8 * crops[i].progress;
-      ctx.fillStyle = '#22c55e'; ctx.fillRect(cx + 5, cy + 10 - h, 2, h);
-    }
-  }
-
-  drawNet();
-
-  if (tools.turret > 0) {
-    ctx.save();
-    ctx.translate(0, -level.size*0.5);
-    const ts = level.size * (0.2 + tools.turret * 0.05);
-    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, 0, ts, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = tools.turret >= 3 ? '#fbbf24' : '#475569'; ctx.lineWidth = 2; ctx.stroke();
-    if (megalodon) {
-      const wa = Math.atan2(megalodon.y - player.y, megalodon.x - player.x);
-      ctx.rotate(wa - (player.angle + Math.PI/2));
-    } else if (sharks.length > 0) {
-      let nearest = null, bestD = 500;
-      for (const sh of sharks) {
-        if (sh.hiddenTimer > 0) continue;
-        const d = Math.hypot(sh.x - player.x, sh.y - player.y);
-        if (d < bestD) { bestD = d; nearest = sh; }
-      }
-      if (nearest) {
-        const wa = Math.atan2(nearest.y - player.y, nearest.x - player.x);
-        ctx.rotate(wa - (player.angle + Math.PI/2));
-      }
-    }
-    const bl = level.size * (0.5 + tools.turret * 0.1);
-    ctx.fillStyle = '#475569'; ctx.fillRect(0, -3, bl, 6);
-    ctx.fillStyle = '#94a3b8'; ctx.fillRect(bl - 5, -5, level.size*0.15, 10);
-    if (tools.turret >= 3) {
-      ctx.fillStyle = '#475569'; ctx.fillRect(0, -8, bl*0.9, 5);
-      ctx.fillStyle = '#475569'; ctx.fillRect(0, 3, bl*0.9, 5);
-    }
-    ctx.restore();
-  }
-
-  ctx.restore();
-}
-
-function drawResource(res) {
-  ctx.save(); ctx.translate(res.x, res.y); ctx.rotate(res.rotation);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-  ctx.beginPath(); ctx.ellipse(2, 4, res.r*1.1, res.r*0.5, 0, 0, Math.PI*2); ctx.fill();
-  if (res.type === 'wood') {
-    for (let j = 0; j < 2; j++) {
-      const y = -res.r*0.4 + j * res.r*0.6;
-      const g = ctx.createLinearGradient(0, y, 0, y + res.r*0.6);
-      g.addColorStop(0, '#b45309'); g.addColorStop(0.5, '#92400e'); g.addColorStop(1, '#78350f');
-      ctx.fillStyle = g; ctx.fillRect(-res.r, y, res.r*2, res.r*0.6);
-      ctx.strokeStyle = '#451a03'; ctx.lineWidth = 1; ctx.strokeRect(-res.r, y, res.r*2, res.r*0.6);
-    }
-  } else if (res.type === 'metal') {
-    const g = ctx.createLinearGradient(-res.r, 0, res.r, 0);
-    g.addColorStop(0, '#1e293b'); g.addColorStop(0.5, '#64748b'); g.addColorStop(1, '#1e293b');
-    ctx.fillStyle = g; ctx.fillRect(-res.r*0.8, -res.r, res.r*1.6, res.r*2);
-    ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.strokeRect(-res.r*0.8, -res.r, res.r*1.6, res.r*2);
-  } else if (res.type === 'plastic') {
-    ctx.fillStyle = 'rgba(14, 165, 233, 0.8)'; ctx.fillRect(-res.r*0.5, -res.r, res.r, res.r*2);
-    ctx.fillStyle = '#f8fafc'; ctx.fillRect(-res.r*0.25, -res.r*1.3, res.r*0.5, 4);
-  } else if (res.type === 'fabric') {
-    const g = ctx.createLinearGradient(-res.r*0.7, 0, res.r*0.7, 0);
-    g.addColorStop(0, '#7e22ce'); g.addColorStop(0.5, '#a855f7'); g.addColorStop(1, '#7e22ce');
-    ctx.fillStyle = g; ctx.fillRect(-res.r*0.7, -res.r*0.9, res.r*1.4, res.r*1.8);
-    ctx.strokeStyle = '#e9d5ff'; ctx.lineWidth = 2; ctx.strokeRect(-res.r*0.7, -res.r*0.9, res.r*1.4, res.r*1.8);
-  } else if (res.type === 'seed') {
-    ctx.fillStyle = '#10b981'; ctx.fillRect(-res.r*0.6, -res.r*0.7, res.r*1.2, res.r*1.4);
-    ctx.fillStyle = '#065f46'; ctx.font = `bold ${res.r*0.8}px sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('🌱', 0, 0);
-  }
-  ctx.restore();
-}
-
-function drawShark(sh) {
-  if (sh.hiddenTimer > 0) return;
-  ctx.save(); ctx.translate(sh.x, sh.y); ctx.rotate(sh.angle);
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.beginPath(); ctx.ellipse(0, 0, 25, 10, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = sh.state === 'attack' ? '#dc2626' : '#475569';
-  ctx.beginPath();
-  ctx.moveTo(0, -20); ctx.lineTo(16, 10); ctx.lineTo(0, 6); ctx.lineTo(-16, 10);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1.5; ctx.stroke();
-  if (sh.state === 'attack') {
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath(); ctx.arc(8, -3, 2, 0, Math.PI*2); ctx.fill();
-  }
-  // HP бар
-  if (sh.hp < sh.maxHp) {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    ctx.fillRect(-12, -26, 24, 4);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(-11, -25, 22 * (sh.hp/sh.maxHp), 2);
-  }
-  ctx.restore();
-}
-
-function drawOre(ore) {
-  ctx.save(); ctx.translate(ore.x, ore.y);
-  const rockGrad = ctx.createRadialGradient(-5, -5, 3, 0, 0, 25);
-  rockGrad.addColorStop(0, '#475569'); rockGrad.addColorStop(1, '#1e293b');
-  ctx.fillStyle = rockGrad;
-  ctx.beginPath();
-  ctx.moveTo(-20, -8); ctx.lineTo(-13, -20); ctx.lineTo(5, -22); ctx.lineTo(20, -10);
-  ctx.lineTo(18, 12); ctx.lineTo(-5, 22); ctx.lineTo(-18, 15); ctx.closePath(); ctx.fill();
-  let colors = [];
-  if (ore.type === 'copper') colors = ['#fb923c', '#f97316'];
-  else if (ore.type === 'iron') colors = ['#cbd5e1', '#94a3b8'];
-  else if (ore.type === 'coal') colors = ['#334155', '#0f172a'];
-  else if (ore.type === 'gold') colors = ['#fde047', '#fbbf24'];
-  else if (ore.type === 'diamond') colors = ['#a5f3fc', '#67e8f9'];
-  for (let i = 0; i < 3; i++) {
-    ctx.fillStyle = colors[i % colors.length];
-    ctx.beginPath();
-    const cx = -10 + i * 10, cy = -2 + (i%2)*4, size = 5;
-    ctx.moveTo(cx, cy - size); ctx.lineTo(cx + size*0.6, cy); ctx.lineTo(cx, cy + size); ctx.lineTo(cx - size*0.6, cy);
-    ctx.closePath(); ctx.fill();
-  }
-  if (ore.hp < 3) {
-    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(-15, -28, 30, 5);
-    ctx.fillStyle = '#ef4444'; ctx.fillRect(-14, -27, 28 * (ore.hp/3), 3);
-  }
-  ctx.restore();
-}
-
-function drawMob(m) {
-  ctx.save(); ctx.translate(m.x, m.y);
-  if (m.type === 'boar') {
-    ctx.fillStyle = '#78350f';
-    ctx.beginPath(); ctx.ellipse(0, 0, 22, 13, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#451a03';
-    ctx.beginPath(); ctx.arc(18, 0, 8, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(10, -5, 2.5, 0, Math.PI*2); ctx.fill();
-  } else if (m.type === 'bat') {
-    const wing = Math.sin(game.time * 20) * 10;
-    ctx.fillStyle = '#475569';
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-22, -8 + wing); ctx.lineTo(-12, 0); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(22, -8 + wing); ctx.lineTo(12, 0); ctx.fill();
-    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath(); ctx.arc(-2, -1, 1.2, 0, Math.PI*2); ctx.fill();
-    ctx.beginPath(); ctx.arc(2, -1, 1.2, 0, Math.PI*2); ctx.fill();
-  }
-  ctx.restore();
-}
-
-function drawBuilding(b) {
-  ctx.save(); ctx.translate(b.x, b.y);
-  if (b.type === 'gen') {
-    ctx.fillStyle = '#a855f7'; ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#d8b4fe'; ctx.lineWidth = 3; ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 20px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText('⚡', 0, 2);
-    ctx.strokeStyle = 'rgba(168, 85, 247, 0.2)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, 250, 0, Math.PI*2); ctx.stroke();
-  } else if (b.type === 'drill') {
-    ctx.fillStyle = '#64748b'; ctx.fillRect(-22, -22, 44, 44);
-    ctx.strokeStyle = b.fuel > 0 ? '#22c55e' : '#ef4444'; ctx.lineWidth = 3;
-    ctx.strokeRect(-22, -22, 44, 44);
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath(); ctx.moveTo(0,-12); ctx.lineTo(12,8); ctx.lineTo(-12,8); ctx.fill();
-    if (b.fuel > 0) {
-      ctx.fillStyle = '#22c55e'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText(b.fuel, 0, 38);
-    }
-  }
-  ctx.restore();
-}
-
-function drawMegalodon() {
-  if (!megalodon) return;
-  ctx.save(); ctx.translate(megalodon.x, megalodon.y); ctx.rotate(megalodon.angle);
-  if (megalodon.state === 'charging' && megalodon.stateTimer > 0.5) {
-    const auraR = megalodon.r * 2.2;
-    const auraGrad = ctx.createRadialGradient(0, 0, megalodon.r, 0, 0, auraR);
-    auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.5)'); auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-    ctx.fillStyle = auraGrad; ctx.beginPath(); ctx.arc(0, 0, auraR, 0, Math.PI*2); ctx.fill();
-  }
-  const bodyGrad = ctx.createLinearGradient(0, -megalodon.r, 0, megalodon.r);
-  if (megalodon.hitFlash > 0) { bodyGrad.addColorStop(0, '#fff'); bodyGrad.addColorStop(1, '#e0e0e0'); }
-  else { bodyGrad.addColorStop(0, '#475569'); bodyGrad.addColorStop(0.5, '#1e293b'); bodyGrad.addColorStop(1, '#0f172a'); }
-  ctx.fillStyle = bodyGrad;
-  ctx.beginPath();
-  ctx.moveTo(megalodon.r*1.5, 0);
-  ctx.quadraticCurveTo(megalodon.r*0.8, -megalodon.r*1.0, -megalodon.r*0.3, -megalodon.r*0.9);
-  ctx.lineTo(-megalodon.r*1.2, -megalodon.r*0.7);
-  ctx.lineTo(-megalodon.r*0.9, 0);
-  ctx.lineTo(-megalodon.r*1.2, megalodon.r*0.7);
-  ctx.lineTo(-megalodon.r*0.3, megalodon.r*0.9);
-  ctx.quadraticCurveTo(megalodon.r*0.8, megalodon.r*1.0, megalodon.r*1.5, 0);
-  ctx.fill();
-  ctx.strokeStyle = '#334155'; ctx.lineWidth = 2.5; ctx.stroke();
-  ctx.fillStyle = '#1e293b';
-  ctx.beginPath();
-  ctx.moveTo(-megalodon.r*0.1, -megalodon.r*0.85);
-  ctx.lineTo(-megalodon.r*0.5, -megalodon.r*1.4);
-  ctx.lineTo(-megalodon.r*0.5, -megalodon.r*0.7);
-  ctx.fill();
-  const tailWave = Math.sin(game.time*8) * 5;
-  ctx.beginPath();
-  ctx.moveTo(-megalodon.r*1.0, 0);
-  ctx.lineTo(-megalodon.r*1.6, -megalodon.r*0.6 + tailWave);
-  ctx.lineTo(-megalodon.r*1.4, 0);
-  ctx.lineTo(-megalodon.r*1.6, megalodon.r*0.6 + tailWave);
-  ctx.fill();
-  ctx.fillStyle = '#ef4444'; ctx.shadowBlur = 15; ctx.shadowColor = '#ef4444';
-  ctx.beginPath(); ctx.arc(megalodon.r*0.65, -15, 6, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(megalodon.r*0.65, 15, 6, 0, Math.PI*2); ctx.fill();
-  ctx.shadowBlur = 0;
-  if (megalodon.state === 'charging' && megalodon.stateTimer <= 0.5) {
-    ctx.fillStyle = '#fff';
-    for (let i = -3; i <= 3; i++) {
-      const ty = i * 6;
-      ctx.beginPath();
-      ctx.moveTo(megalodon.r*1.35, ty); ctx.lineTo(megalodon.r*1.55, ty + 3); ctx.lineTo(megalodon.r*1.35, ty + 6);
-      ctx.fill();
-    }
-  }
-  ctx.restore();
-}
-
-function drawPlayer() {
-  if (!player.isOnFoot) {
-    drawBoat();
-    if (fishing.state !== 'idle') {
-      const lineLen = 100;
-      const lineX = player.x + Math.cos(player.angle) * lineLen;
-      const lineY = player.y + Math.sin(player.angle) * lineLen;
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(lineX, lineY); ctx.stroke();
-      ctx.fillStyle = fishing.state === 'biting' ? '#ef4444' : '#fbbf24';
-      ctx.beginPath(); ctx.arc(lineX, lineY, 6, 0, Math.PI*2); ctx.fill();
-      if (fishing.state === 'biting') {
-        ctx.fillStyle = '#fff'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign='center';
-        ctx.fillText('❗', lineX, lineY - 20);
-      }
-    }
-  } else {
-    ctx.save(); ctx.translate(player.x, player.y); ctx.rotate(player.angle);
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.ellipse(0, 5, 12, 7, 0, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#38bdf8'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = '#bae6fd'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(5, -3, 2.5, 0, Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-}
-
-function drawHarpoons() {
-  for (const h of harpoons) {
-    ctx.save(); ctx.translate(h.x, h.y); ctx.rotate(h.angle);
-    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(-15, 0); ctx.lineTo(8, 0); ctx.stroke();
-    ctx.fillStyle = '#cbd5e1';
-    ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(4, -5); ctx.lineTo(4, 5); ctx.fill();
-    ctx.restore();
-  }
-}
-
-function drawMiniMap() {
-  miniCtx.clearRect(0, 0, 220, 220);
-  miniCtx.fillStyle = 'rgba(2, 6, 23, 0.9)';
-  miniCtx.fillRect(0, 0, 220, 220);
-  const scaleX = 200 / (WORLD.maxX - WORLD.minX);
-  const scaleY = 200 / (WORLD.maxY - WORLD.minY);
-  const scale = Math.min(scaleX, scaleY);
-  const offsetX = (220 - (WORLD.maxX - WORLD.minX) * scale) / 2;
-  const offsetY = (220 - (WORLD.maxY - WORLD.minY) * scale) / 2;
-  const wx = (x) => offsetX + (x - WORLD.minX) * scale;
-  const wy = (y) => offsetY + (y - WORLD.minY) * scale;
-  miniCtx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-  miniCtx.lineWidth = 2;
-  miniCtx.strokeRect(offsetX, offsetY, (WORLD.maxX - WORLD.minX) * scale, (WORLD.maxY - WORLD.minY) * scale);
-  if (game.zone === 'ocean' || game.zone === 'island') {
-    miniCtx.fillStyle = '#22c55e';
-    miniCtx.beginPath();
-    miniCtx.arc(wx(island.x), wy(island.y), island.r * scale, 0, Math.PI*2);
-    miniCtx.fill();
-  }
-  if (game.zone === 'ocean') {
-    for (const res of resources) {
-      if (res.type === 'wood') miniCtx.fillStyle = '#fbbf24';
-      else if (res.type === 'metal') miniCtx.fillStyle = '#cbd5e1';
-      else if (res.type === 'plastic') miniCtx.fillStyle = '#38bdf8';
-      else if (res.type === 'fabric') miniCtx.fillStyle = '#d8b4fe';
-      else miniCtx.fillStyle = '#10b981';
-      miniCtx.fillRect(wx(res.x) - 1.5, wy(res.y) - 1.5, 3, 3);
-    }
-    for (const sh of sharks) {
-      if (sh.hiddenTimer > 0) continue;
-      miniCtx.fillStyle = sh.state === 'attack' ? '#ef4444' : '#94a3b8';
-      miniCtx.beginPath();
-      miniCtx.arc(wx(sh.x), wy(sh.y), 2.5, 0, Math.PI*2);
-      miniCtx.fill();
-    }
-    if (megalodon) {
-      miniCtx.fillStyle = '#dc2626';
-      miniCtx.beginPath();
-      miniCtx.arc(wx(megalodon.x), wy(megalodon.y), 4, 0, Math.PI*2);
-      miniCtx.fill();
-    }
-  }
-  miniCtx.fillStyle = '#38bdf8';
-  miniCtx.strokeStyle = '#fff';
-  miniCtx.lineWidth = 1.5;
-  miniCtx.beginPath();
-  miniCtx.arc(wx(player.x), wy(player.y), 4, 0, Math.PI*2);
-  miniCtx.fill();
-  miniCtx.stroke();
-  miniCtx.strokeStyle = '#fff';
-  miniCtx.lineWidth = 1.5;
-  miniCtx.beginPath();
-  miniCtx.moveTo(wx(player.x), wy(player.y));
-  miniCtx.lineTo(wx(player.x) + Math.cos(player.angle) * 8, wy(player.y) + Math.sin(player.angle) * 8);
-  miniCtx.stroke();
-}
-
-function draw() {
-  if (game.zone === 'ocean' || game.zone === 'island') drawOceanBg();
-  else if (game.zone === 'cave') { ctx.fillStyle = '#020617'; ctx.fillRect(0, 0, W, H); }
-  if (game.state === 'menu') return;
-  ctx.save();
-  ctx.translate(W/2, H/2);
-  ctx.scale(game.camera.zoom, game.camera.zoom);
-  ctx.translate(-game.camera.x, -game.camera.y);
-  if (game.zone === 'ocean' || game.zone === 'island') drawMountains();
-  if (game.zone === 'ocean' || game.zone === 'island') drawIsland();
-  if (game.zone === 'island' || game.zone === 'cave') {
-    for (const ore of ores) drawOre(ore);
-  }
-  if (game.zone === 'cave') {
-    if (game.caveDepth < 3) {
-      ctx.fillStyle = '#475569'; ctx.fillRect(-30, -430, 60, 60);
-      ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3; ctx.strokeRect(-30, -430, 60, 60);
-      ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 30px sans-serif'; ctx.textAlign='center';
-      ctx.fillText('🛗', 0, -390);
-    }
-    ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(0, 400, 40, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('🚪', 0, 410);
-  }
-  for (const b of buildings) drawBuilding(b);
-  for (const m of mobs) drawMob(m);
-  if (megalodon) drawMegalodon();
-  drawHarpoons();
-  if (game.zone === 'ocean') {
-    for (const res of resources) drawResource(res);
-    for (const sh of sharks) drawShark(sh);
-  }
-  drawPlayer();
-  for (const pt of particles) {
-    ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
-    ctx.fillStyle = pt.color;
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  if (game.zone === 'ocean' && game.isNight) {
-    const lightGrad = ctx.createRadialGradient(player.x, player.y, 80, player.x, player.y, 350);
-    lightGrad.addColorStop(0, 'rgba(15, 23, 42, 0)'); lightGrad.addColorStop(1, 'rgba(2, 6, 23, 0.9)');
-    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 450, 0, Math.PI*2); ctx.fill();
-  } else if (game.zone === 'cave') {
-    const darkness = Math.min(0.95, 0.8 + game.caveDepth * 0.05);
-    const lightGrad = ctx.createRadialGradient(player.x, player.y, 50, player.x, player.y, 200);
-    lightGrad.addColorStop(0, 'rgba(0, 0, 0, 0)'); lightGrad.addColorStop(1, `rgba(0, 0, 0, ${darkness})`);
-    ctx.fillStyle = lightGrad; ctx.beginPath(); ctx.arc(player.x, player.y, 300, 0, Math.PI*2); ctx.fill();
-  }
-  ctx.restore();
-  if (joystick.active) {
-    ctx.save(); ctx.globalAlpha = 0.2;
-    ctx.beginPath(); ctx.arc(joystick.bx, joystick.by, JOY_MAX, 0, Math.PI*2); ctx.fillStyle = '#ffffff'; ctx.fill();
-    ctx.globalAlpha = 0.6;
-    ctx.beginPath(); ctx.arc(joystick.bx + joystick.dx*JOY_MAX, joystick.by + joystick.dy*JOY_MAX, 22, 0, Math.PI*2); ctx.fillStyle = '#38bdf8'; ctx.fill();
-    ctx.restore();
-  }
-  drawMiniMap();
-  if (bossWarningTimer > 0 && !megalodon) {
-    ctx.fillStyle = 'rgba(239, 68, 68, ' + (Math.sin(game.time * 15) * 0.5 + 0.5) + ')';
-    ctx.font = '900 22px system-ui, sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('ВНИМАНИЕ: МЕГАЛОДОН', W/2, H/2 - 60);
-    ctx.fillText('ПРИБЛИЖАЕТСЯ', W/2, H/2 - 30);
-  }
-}
-
-function loop(now) {
-  let dt = (now - lastTime) / 1000;
-  lastTime = now;
-  if (dt > 0.05) dt = 0.05;
-  if (game.state === 'playing') {
-    update(dt);
-    draw();
-  }
-  requestAnimationFrame(loop);
-}
-
-function showMenu() {
-  game.state = 'menu';
-  overlayContent.innerHTML = `
-    <h1 class="title">МОРСКОЙ ВОЛК</h1>
-    <p class="subtitle">Выживи, победи Мегалодона, построй империю!</p>
-    <button class="btn" id="playBtn">▶ НАЧАТЬ</button>
-    <div class="hint">
-      <p>🕹️ Двигайся пальцем по экрану</p>
-      <p>🛠️ Крафт и улучшения в ВЕРСТАКЕ</p>
-      <p>🎯 Турель автостреляет по врагам</p>
-      <p>🕸️ Сетка увеличивает радиус сбора</p>
-      <p>🦈 Акулы патрулируют по маршрутам</p>
-      <p>🏝️ Найди остров для шахт</p>
-      <p>⚡ Убей босса — получи ядро</p>
-    </div>`;
-  overlay.classList.add('active');
-  document.getElementById('playBtn').addEventListener('click', startGame);
-}
-
-window.addEventListener('error', e => console.error('JS ERROR:', e.message, e.lineno));
-
-showMenu();
-requestAnimationFrame(loop);
+startScreen();
 </script>
 </body>
 </html>
