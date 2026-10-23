@@ -8,66 +8,104 @@
 <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
 <script>window.vConsole = new window.VConsole();</script>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-  html,body{width:100%;height:100%;overflow:hidden;background:#0f172a;font-family:system-ui,sans-serif;touch-action:none}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;font-family:system-ui,sans-serif}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0f172a;touch-action:none}
   #game{display:block;width:100%;height:100%}
-  /* UI поверх игры */
+  
+  /* UI */
   #ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:16px}
-  .top-bar{display:flex;justify-content:space-between;align-items:flex-start;pointer-events:auto}
-  .resources{display:flex;gap:12px;background:rgba(15,23,42,0.8);padding:8px 16px;border-radius:12px;border:2px solid #334155;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
-  .res-item{display:flex;align-items:center;gap:6px;color:#fff;font-weight:bold;font-size:14px;text-shadow:1px 1px 0 #000}
+  .top-bar{display:flex;justify-content:flex-start;pointer-events:auto}
+  .resources{display:flex;gap:12px;background:rgba(15,23,42,0.85);padding:8px 16px;border-radius:12px;border:2px solid #334155;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
+  .res-item{display:flex;align-items:center;gap:6px;color:#fff;font-weight:bold;font-size:15px;text-shadow:1px 1px 0 #000}
   .res-icon{font-size:18px}
-  .bottom-bar{display:flex;justify-content:center;gap:12px;pointer-events:auto;padding-bottom:24px}
-  .action-btn{width:60px;height:60px;border-radius:50%;background:rgba(30,41,59,0.9);border:2px solid #475569;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,0.5);cursor:pointer;transition:transform 0.1s}
+  
+  .bottom-bar{display:flex;justify-content:center;gap:16px;pointer-events:auto;padding-bottom:24px}
+  .action-btn{width:64px;height:64px;border-radius:50%;background:rgba(30,41,59,0.9);border:2px solid #475569;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,0.5);cursor:pointer;transition:transform 0.1s}
   .action-btn:active{transform:scale(0.9);background:#334155}
+  .action-btn.active{border-color:#4ade80;background:#14532d}
+
+  /* Меню строительства */
+  #buildMenu{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.95);border:2px solid #475569;border-radius:16px;padding:16px;display:flex;gap:12px;opacity:0;pointer-events:none;transition:all 0.3s}
+  #buildMenu.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+  .build-option{background:#1e293b;border:2px solid #334155;border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;color:#fff;min-width:80px}
+  .build-option:active{background:#334155}
+  .build-option .icon{font-size:32px;margin-bottom:4px}
+  .build-option .name{font-size:11px;font-weight:bold}
+  .build-option .cost{font-size:10px;color:#fbbf24;margin-top:4px}
+
+  /* Плашка уведомления */
+  #toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:#fbbf24;color:#000;padding:8px 16px;border-radius:8px;font-weight:bold;opacity:0;transition:all 0.3s;pointer-events:none;z-index:100}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
+
 <div id="ui">
   <div class="top-bar">
     <div class="resources">
-      <div class="res-item"><span class="res-icon">🪵</span> 0</div>
-      <div class="res-item"><span class="res-icon">🪨</span> 0</div>
-      <div class="res-item"><span class="res-icon">🍖</span> 0</div>
+      <div class="res-item"><span class="res-icon">🪵</span> <span id="uiWood">0</span></div>
+      <div class="res-item"><span class="res-icon">🪨</span> <span id="uiStone">0</span></div>
+      <div class="res-item"><span class="res-icon">🍖</span> <span id="uiFood">0</span></div>
     </div>
   </div>
   <div class="bottom-bar">
-    <div class="action-btn" onclick="alert('Меню строительства в разработке!')">🏗️</div>
-    <div class="action-btn" onclick="alert('Меню армии в разработке!')">⚔️</div>
+    <div class="action-btn" id="btnBuild" onclick="toggleBuildMenu()">🏗️</div>
+    <div class="action-btn" onclick="showToast('Армия появится позже!')">⚔️</div>
   </div>
 </div>
 
+<div id="buildMenu">
+  <div class="build-option" onclick="selectBuild('townhall')">
+    <div class="icon">🏰</div>
+    <div class="name">Ратуша</div>
+    <div class="cost">🪵50 🪨20</div>
+  </div>
+  <div class="build-option" onclick="selectBuild('lumberjack')">
+    <div class="icon">🪓</div>
+    <div class="name">Лесопилка</div>
+    <div class="cost">🪵20</div>
+  </div>
+</div>
+
+<div id="toast">Текст</div>
+
 <script>
 // ==========================================
-// НАСТРОЙКИ И БАЗОВЫЕ ПЕРЕМЕННЫЕ
+// БАЗОВЫЕ НАСТРОЙКИ
 // ==========================================
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-let W = window.innerWidth;
-let H = window.innerHeight;
+let W = window.innerWidth, H = window.innerHeight;
 let DPR = Math.min(window.devicePixelRatio || 1, 2);
 
-// Параметры изометрии (Размер тайла)
-const TILE_W = 64;
-const TILE_H = 32;
-const MAP_SIZE = 30; // Карта 30x30
+const TILE_W = 64, TILE_H = 32, MAP_SIZE = 30;
 
-// Состояние камеры
-const camera = {
-  x: 0,
-  y: 0,
-  zoom: 1,
-  minZoom: 0.5,
-  maxZoom: 2,
-  isDragging: false,
-  lastX: 0,
-  lastY: 0,
-  pinchDist: 0
-};
+// Ресурсы
+let resources = { wood: 100, stone: 50, food: 0 };
+let buildings = []; // { x, y, type, size }
 
-// Инициализация карты
+// Режимы
+let selectedBuild = null; // Какой тип здания строим
+let hoveredTile = null;   // Тайл под курсором/пальцем для призрака здания
+
+// Камера
+const camera = { x: 0, y: 0, zoom: 1, minZoom: 0.4, maxZoom: 2.5 };
+
+// Карта
 let map = [];
+
+// Оптимизация (Pre-rendering)
+const bgCanvas = document.createElement('canvas');
+const bgCtx = bgCanvas.getContext('2d');
+const OFFSET_X = MAP_SIZE * (TILE_W / 2);
+const OFFSET_Y = 200;
+
+// Здания
+const BUILDINGS = {
+  townhall: { name: 'Ратуша', cost: { wood: 50, stone: 20 }, size: 2, emoji: '🏰', color: '#fbbf24' },
+  lumberjack: { name: 'Лесопилка', cost: { wood: 20, stone: 0 }, size: 1, emoji: '🪓', color: '#a16207' }
+};
 
 // ==========================================
 // ГЕНЕРАЦИЯ КАРТЫ
@@ -77,17 +115,11 @@ function generateMap() {
   for (let y = 0; y < MAP_SIZE; y++) {
     map[y] = [];
     for (let x = 0; x < MAP_SIZE; x++) {
-      // Определяем центр и края для создания острова
       const distFromCenter = Math.hypot(x - MAP_SIZE/2, y - MAP_SIZE/2);
       let type = 'grass';
-      
-      if (distFromCenter > MAP_SIZE * 0.45) {
-        type = 'water'; // Вода по краям
-      } else if (Math.random() < 0.2) {
-        type = 'tree'; // Деревья на суше
-      } else if (Math.random() < 0.1) {
-        type = 'rock'; // Камни
-      }
+      if (distFromCenter > MAP_SIZE * 0.45) type = 'water';
+      else if (Math.random() < 0.15) type = 'tree';
+      else if (Math.random() < 0.08) type = 'rock';
       
       map[y][x] = { x, y, type, seed: Math.random() * 100 };
     }
@@ -95,9 +127,55 @@ function generateMap() {
 }
 
 // ==========================================
-// ИЗОМЕТРИЧЕСКАЯ МАТЕМАТИКА
+// PRE-RENDERING (ФИКС ЛАГОВ)
 // ==========================================
-// Преобразование координат карты в экранные координаты (до учета камеры)
+function renderTerrain() {
+  bgCanvas.width = MAP_SIZE * TILE_W;
+  bgCanvas.height = MAP_SIZE * TILE_H + 400;
+  
+  bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  bgCtx.translate(bgCanvas.width / 2, OFFSET_Y);
+
+  for (let y = 0; y < MAP_SIZE; y++) {
+    for (let x = 0; x < MAP_SIZE; x++) {
+      const t = map[y][x];
+      const pos = getScreenPos(x, y);
+      
+      bgCtx.save();
+      bgCtx.translate(pos.x, pos.y);
+
+      bgCtx.beginPath();
+      bgCtx.moveTo(0, -TILE_H / 2);
+      bgCtx.lineTo(TILE_W / 2, 0);
+      bgCtx.lineTo(0, TILE_H / 2);
+      bgCtx.lineTo(-TILE_W / 2, 0);
+      bgCtx.closePath();
+
+      if (t.type === 'water') {
+        const grad = bgCtx.createLinearGradient(0, -TILE_H/2, 0, TILE_H/2);
+        grad.addColorStop(0, '#0ea5e9');
+        grad.addColorStop(1, '#0284c7');
+        bgCtx.fillStyle = grad;
+        bgCtx.fill();
+      } else {
+        const grad = bgCtx.createLinearGradient(0, -TILE_H/2, 0, TILE_H/2);
+        grad.addColorStop(0, '#4ade80');
+        grad.addColorStop(1, '#22c55e');
+        bgCtx.fillStyle = grad;
+        bgCtx.fill();
+        // Текстура
+        bgCtx.strokeStyle = 'rgba(0,0,0,0.05)';
+        bgCtx.beginPath(); bgCtx.moveTo(0, -TILE_H/2); bgCtx.lineTo(0, 0); bgCtx.stroke();
+      }
+      bgCtx.restore();
+    }
+  }
+}
+
+// ==========================================
+// ИЗОМЕТРИЯ
+// ==========================================
 function getScreenPos(mapX, mapY) {
   return {
     x: (mapX - mapY) * (TILE_W / 2),
@@ -105,7 +183,6 @@ function getScreenPos(mapX, mapY) {
   };
 }
 
-// Преобразование экранных координат в координаты карты (для кликов)
 function getMapPos(screenX, screenY) {
   const sx = screenX - W/2 - camera.x;
   const sy = screenY - H/2 - camera.y;
@@ -116,194 +193,254 @@ function getMapPos(screenX, screenY) {
 }
 
 // ==========================================
-// ВВОД (МЫШЬ И ТАЧ)
+// ВВОД (СВАЙП И КЛИК)
 // ==========================================
+let isDragging = false;
+let dragStartX = 0, dragStartY = 0;
+let lastX = 0, lastY = 0;
+let hasMoved = false;
+
 function handleStart(x, y) {
-  camera.isDragging = true;
-  camera.lastX = x;
-  camera.lastY = y;
+  isDragging = true;
+  hasMoved = false;
+  dragStartX = x; dragStartY = y;
+  lastX = x; lastY = y;
 }
+
 function handleMove(x, y) {
-  if (camera.isDragging) {
-    const dx = x - camera.lastX;
-    const dy = y - camera.lastY;
-    camera.x += dx;
-    camera.y += dy;
-    camera.lastX = x;
-    camera.lastY = y;
+  if (!isDragging) return;
+  
+  // Если сдвинули палец больше чем на 10 пикселей — это свайп камеры
+  if (Math.hypot(x - dragStartX, y - dragStartY) > 10) {
+    hasMoved = true;
+  }
+
+  if (hasMoved) {
+    camera.x += (x - lastX);
+    camera.y += (y - lastY);
+  }
+  lastX = x; lastY = y;
+}
+
+function handleEnd(x, y) {
+  isDragging = false;
+  // Если это был просто тап (не свайп) — обрабатываем клик
+  if (!hasMoved) {
+    handleClick(x, y);
   }
 }
-function handleEnd() {
-  camera.isDragging = false;
+
+function handleClick(screenX, screenY) {
+  const p = getMapPos(screenX, screenY);
+  const gx = Math.round(p.x);
+  const gy = Math.round(p.y);
+
+  if (gx >= 0 && gx < MAP_SIZE && gy >= 0 && gy < MAP_SIZE) {
+    const tile = map[gy][gx];
+
+    // Если мы в режиме строительства
+    if (selectedBuild) {
+      if (isValidPlacement(gx, gy, selectedBuild)) {
+        placeBuilding(gx, gy, selectedBuild);
+      } else {
+        showToast('Здесь нельзя строить!');
+      }
+      return;
+    }
+
+    // Иначе собираем ресурсы
+    if (tile.type === 'tree') {
+      tile.type = 'grass';
+      resources.wood += 10;
+      updateUI();
+      showToast('+10 🪵');
+      renderTerrain(); // Обновляем фон (убираем дерево из статики)
+    } else if (tile.type === 'rock') {
+      tile.type = 'grass';
+      resources.stone += 5;
+      updateUI();
+      showToast('+5 🪨');
+      renderTerrain();
+    }
+  }
 }
 
-// Мышь
+// Обработчики событий мыши
 canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
 canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-window.addEventListener('mouseup', handleEnd);
+window.addEventListener('mouseup', e => handleEnd(e.clientX, e.clientY));
 
-// Колесико для зума на ПК
+// Колесико (зум)
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
-  camera.zoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.zoom + zoomDelta));
+  camera.zoom = clamp(camera.zoom + (e.deltaY > 0 ? -0.1 : 0.1), camera.minZoom, camera.maxZoom);
 }, { passive: false });
 
-// Тач (свайп и пинч)
+// Тач
 canvas.addEventListener('touchstart', e => {
   e.preventDefault();
   if (e.touches.length === 1) {
     handleStart(e.touches[0].clientX, e.touches[0].clientY);
   } else if (e.touches.length === 2) {
-    camera.isDragging = false;
-    camera.pinchDist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
+    isDragging = false;
+    camera.pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
   }
 }, { passive: false });
 
 canvas.addEventListener('touchmove', e => {
   e.preventDefault();
-  if (e.touches.length === 1) {
+  if (e.touches.length === 1 && isDragging) {
     handleMove(e.touches[0].clientX, e.touches[0].clientY);
   } else if (e.touches.length === 2) {
-    const newDist = Math.hypot(
-      e.touches[0].clientX - e.touches[1].clientX,
-      e.touches[0].clientY - e.touches[1].clientY
-    );
+    const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
     const delta = newDist - camera.pinchDist;
-    camera.zoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.zoom + delta * 0.005));
+    camera.zoom = clamp(camera.zoom + delta * 0.005, camera.minZoom, camera.maxZoom);
     camera.pinchDist = newDist;
   }
 }, { passive: false });
 
-canvas.addEventListener('touchend', handleEnd);
+canvas.addEventListener('touchend', e => {
+  if (isDragging && e.changedTouches.length === 1) {
+    handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+  }
+  isDragging = false;
+});
+
+// ==========================================
+// СТРОИТЕЛЬСТВО
+// ==========================================
+function toggleBuildMenu() {
+  const menu = document.getElementById('buildMenu');
+  menu.classList.toggle('show');
+  document.getElementById('btnBuild').classList.toggle('active');
+}
+
+function selectBuild(type) {
+  selectedBuild = type;
+  toggleBuildMenu();
+  showToast('Выберите место на карте');
+}
+
+function isValidPlacement(x, y, type) {
+  const b = BUILDINGS[type];
+  // Проверка ресурсов
+  if (resources.wood < b.cost.wood || resources.stone < b.cost.stone) {
+    showToast('Недостаточно ресурсов!');
+    return false;
+  }
+
+  // Проверка тайлов
+  for (let dy = 0; dy < b.size; dy++) {
+    for (let dx = 0; dx < b.size; dx++) {
+      const tx = x + dx, ty = y + dy;
+      if (tx < 0 || tx >= MAP_SIZE || ty < 0 || ty >= MAP_SIZE) return false;
+      if (map[ty][tx].type !== 'grass') return false; // Только на траве
+      // Проверка на пересечение с другими зданиями
+      for (const existing of buildings) {
+        if (tx >= existing.x && tx < existing.x + existing.size &&
+            ty >= existing.y && ty < existing.y + existing.size) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function placeBuilding(x, y, type) {
+  const b = BUILDINGS[type];
+  resources.wood -= b.cost.wood;
+  resources.stone -= b.cost.stone;
+  buildings.push({ x, y, type, size: b.size, color: b.color, emoji: b.emoji });
+  selectedBuild = null;
+  updateUI();
+  showToast(`${b.name} построена!`);
+}
 
 // ==========================================
 // ОТРИСОВКА
 // ==========================================
-function drawTile(x, y) {
-  const t = map[y][x];
-  const pos = getScreenPos(x, y);
-  
-  ctx.save();
-  ctx.translate(pos.x, pos.y);
-
-  // Основание тайла (ромб)
-  ctx.beginPath();
-  ctx.moveTo(0, -TILE_H / 2);
-  ctx.lineTo(TILE_W / 2, 0);
-  ctx.lineTo(0, TILE_H / 2);
-  ctx.lineTo(-TILE_W / 2, 0);
-  ctx.closePath();
-
-  if (t.type === 'water') {
-    const wave = Math.sin(Date.now() / 500 + t.seed) * 5;
-    const grad = ctx.createLinearGradient(-TILE_W/2, -TILE_H/2, TILE_W/2, TILE_H/2);
-    grad.addColorStop(0, '#0ea5e9');
-    grad.addColorStop(1, '#0284c7');
-    ctx.fillStyle = grad;
-    ctx.fill();
-    // Блик
-    ctx.fillStyle = `rgba(255,255,255,${0.1 + wave * 0.02})`;
-    ctx.beginPath();
-    ctx.moveTo(0, -TILE_H / 4 + wave);
-    ctx.lineTo(TILE_W / 4, 0 + wave);
-    ctx.lineTo(0, TILE_H / 4 + wave);
-    ctx.lineTo(-TILE_W / 4, 0 + wave);
-    ctx.fill();
-  } else {
-    // Трава
-    const grad = ctx.createLinearGradient(0, -TILE_H/2, 0, TILE_H/2);
-    grad.addColorStop(0, '#4ade80');
-    grad.addColorStop(1, '#22c55e');
-    ctx.fillStyle = grad;
-    ctx.fill();
-    
-    // Текстура травы
-    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(-TILE_W/4, -TILE_H/4); ctx.lineTo(0, 0);
-    ctx.moveTo(0, -TILE_H/2); ctx.lineTo(0, 0);
-    ctx.stroke();
-  }
-  
-  ctx.restore();
-
-  // Объекты на тайле
-  if (t.type === 'tree') {
-    const sway = Math.sin(Date.now() / 1000 + t.seed) * 2;
-    ctx.save();
-    ctx.translate(pos.x, pos.y);
-    
-    // Тень
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI*2); ctx.fill();
-    
-    // Ствол
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(-4, -25, 8, 25);
-    
-    // Крона
-    ctx.fillStyle = '#166534';
-    ctx.beginPath(); ctx.arc(sway, -35, 22, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#15803d';
-    ctx.beginPath(); ctx.arc(-5 + sway, -38, 15, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#22c55e';
-    ctx.beginPath(); ctx.arc(5 + sway, -40, 10, 0, Math.PI*2); ctx.fill();
-    
-    ctx.restore();
-  } else if (t.type === 'rock') {
-    ctx.save();
-    ctx.translate(pos.x, pos.y);
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI*2); ctx.fill();
-    
-    ctx.fillStyle = '#64748b';
-    ctx.beginPath(); ctx.moveTo(-10, 5); ctx.lineTo(-5, -15); ctx.lineTo(10, -10); ctx.lineTo(15, 5); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#94a3b8';
-    ctx.beginPath(); ctx.moveTo(-5, -15); ctx.lineTo(10, -10); ctx.lineTo(0, -5); ctx.closePath(); ctx.fill();
-    ctx.restore();
-  }
-}
-
 function draw() {
-  // Очистка экрана
   ctx.fillStyle = '#0f172a';
   ctx.fillRect(0, 0, W, H);
 
   ctx.save();
-  
-  // Применяем камеру (сдвиг и зум в центр экрана)
   ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
   ctx.scale(camera.zoom, camera.zoom);
 
-  // Сортировка тайлов для правильного перекрытия (по y + x)
-  // Рисуем сзади наперед
-  for (let sum = 0; sum < MAP_SIZE * 2; sum++) {
-    for (let x = 0; x < MAP_SIZE; x++) {
-      const y = sum - x;
-      if (y >= 0 && y < MAP_SIZE) {
-        // Простейшая отсечка (рисуем только то, что близко к экрану)
-        const pos = getScreenPos(x, y);
-        const screenX = pos.x * camera.zoom + camera.x + W/2;
-        const screenY = pos.y * camera.zoom + camera.y + H/2;
-        
-        if (screenX > -100 && screenX < W + 100 && screenY > -100 && screenY < H + 100) {
-          drawTile(x, y);
-        }
-      }
-    }
+  // 1. Рисуем закэшированную землю
+  ctx.drawImage(bgCanvas, -bgCanvas.width / 2, -OFFSET_Y);
+
+  // 2. Рисуем динамические объекты (здания) с сортировкой по Y
+  const renderList = [];
+  for (const b of buildings) {
+    renderList.push({ y: b.y + b.size - 1, draw: () => drawBuilding(b) });
   }
+  
+  // Призрак здания
+  if (selectedBuild) {
+    const p = getMapPos(mouseX || W/2, mouseY || H/2); // Заглушка, нужно отслеживать позицию
+  }
+
+  // Сортируем здания по глубине (нижний край)
+  renderList.sort((a, b) => a.y - b.y);
+  for (const item of renderList) item.draw();
+
+  ctx.restore();
+}
+
+function drawBuilding(b) {
+  const pos = getScreenPos(b.x, b.y);
+  const bw = TILE_W * b.size * 0.8;
+  const bh = TILE_H * b.size * 0.8;
+
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+
+  // Тень
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(TILE_W/4, TILE_H/4, bw/2, bh/2, 0, 0, Math.PI*2);
+  ctx.fill();
+
+  // Тело здания
+  ctx.fillStyle = b.color;
+  ctx.fillRect(-bw/2, -bw/2, bw, bw);
+  
+  // Крыша (простая)
+  ctx.fillStyle = '#78350f';
+  ctx.beginPath();
+  ctx.moveTo(-bw/2, -bw/2);
+  ctx.lineTo(0, -bw);
+  ctx.lineTo(bw/2, -bw/2);
+  ctx.fill();
+
+  // Эмодзи
+  ctx.font = '32px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(b.emoji, 0, -10);
 
   ctx.restore();
 }
 
 // ==========================================
-// ИГРОВОЙ ЦИКЛ И ЗАПУСК
+// UI И ЦИКЛ
 // ==========================================
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+function updateUI() {
+  document.getElementById('uiWood').textContent = resources.wood;
+  document.getElementById('uiStone').textContent = resources.stone;
+  document.getElementById('uiFood').textContent = resources.food;
+}
+
+let toastTimeout;
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => t.classList.remove('show'), 2000);
+}
+
 function resize() {
   W = window.innerWidth;
   H = window.innerHeight;
@@ -321,13 +458,16 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-// Старт
+// СТАРТ
 resize();
 generateMap();
+renderTerrain();
+updateUI();
+
 // Центрируем камеру
-const centerPos = getScreenPos(MAP_SIZE/2, MAP_SIZE/2);
-camera.x = -centerPos.x;
-camera.y = -centerPos.y;
+const startPos = getScreenPos(MAP_SIZE/2, MAP_SIZE/2);
+camera.x = -startPos.x;
+camera.y = -startPos.y - 100;
 
 loop();
 </script>
