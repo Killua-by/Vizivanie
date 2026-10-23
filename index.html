@@ -2,466 +2,334 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Хроники Альдории</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1a1a2e">
+<title>Isometric Survival</title>
+<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+<script>window.vConsole = new window.VConsole();</script>
 <style>
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  body {
-    margin: 0; padding: 0; font-family: 'Georgia', serif;
-    background: #1a1410; color: #e8d5b0;
-    display: flex; flex-direction: column;
-    height: 100vh; overflow: hidden;
-    user-select: none;
-  }
-  #stats {
-    background: #2a1f15; border-bottom: 2px solid #5a4020;
-    padding: 8px 10px; font-size: 13px; line-height: 1.4;
-    flex-shrink: 0;
-  }
-  #stats .row { display: flex; flex-wrap: wrap; gap: 8px; }
-  #stats .item { white-space: nowrap; }
-  #stats .hpbar {
-    width: 100%; height: 8px; background: #3a2010;
-    border-radius: 4px; margin-top: 4px; overflow: hidden;
-  }
-  #stats .hpfill {
-    height: 100%; background: linear-gradient(90deg, #a02020, #e04040);
-    transition: width 0.3s;
-  }
-  #log {
-    flex: 1; overflow-y: auto; padding: 10px 12px;
-    font-size: 14px; line-height: 1.5;
-  }
-  #log p { margin: 0 0 6px 0; }
-  .dmg { color: #ff6060; font-weight: bold; }
-  .heal { color: #60ff80; font-weight: bold; }
-  .gold { color: #ffd040; font-weight: bold; }
-  .exp { color: #60c0ff; font-weight: bold; }
-  .boss { color: #ff40ff; font-weight: bold; }
-  .title { color: #ffd700; font-weight: bold; font-size: 15px; }
-  .sys { color: #a09080; font-style: italic; }
-  #actions {
-    background: #2a1f15; border-top: 2px solid #5a4020;
-    padding: 8px; display: flex; flex-wrap: wrap; gap: 6px;
-    flex-shrink: 0; max-height: 45vh; overflow-y: auto;
-  }
-  button {
-    flex: 1 1 45%; min-height: 44px; padding: 8px 10px;
-    background: #4a3020; color: #e8d5b0;
-    border: 1px solid #7a5030; border-radius: 6px;
-    font-family: inherit; font-size: 13px; cursor: pointer;
-    transition: background 0.15s;
-  }
-  button:active { background: #6a4530; }
-  button.danger { background: #602020; border-color: #a04040; }
-  button.special { background: #305060; border-color: #5080a0; }
-  button:disabled { opacity: 0.4; }
-  .full { flex: 1 1 100%; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
+  html,body{width:100%;height:100%;overflow:hidden;background:#0f172a;font-family:system-ui,sans-serif;touch-action:none}
+  #game{display:block;width:100%;height:100%}
+  /* UI поверх игры */
+  #ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:16px}
+  .top-bar{display:flex;justify-content:space-between;align-items:flex-start;pointer-events:auto}
+  .resources{display:flex;gap:12px;background:rgba(15,23,42,0.8);padding:8px 16px;border-radius:12px;border:2px solid #334155;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
+  .res-item{display:flex;align-items:center;gap:6px;color:#fff;font-weight:bold;font-size:14px;text-shadow:1px 1px 0 #000}
+  .res-icon{font-size:18px}
+  .bottom-bar{display:flex;justify-content:center;gap:12px;pointer-events:auto;padding-bottom:24px}
+  .action-btn{width:60px;height:60px;border-radius:50%;background:rgba(30,41,59,0.9);border:2px solid #475569;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,0.5);cursor:pointer;transition:transform 0.1s}
+  .action-btn:active{transform:scale(0.9);background:#334155}
 </style>
 </head>
 <body>
-<div id="stats"></div>
-<div id="log"></div>
-<div id="actions"></div>
-<script>
-'use strict';
-
-// ==================== ДАННЫЕ ====================
-const CLASSES = {
-  knight: {name:'Рыцарь', emoji:'🛡️', hp:30, atk:6, def:5, skill:'Щит веры',
-           skillDesc:'Блокирует следующий удар', skillType:'block'},
-  rogue:  {name:'Плут', emoji:'🗡️', hp:22, atk:8, def:2, skill:'Карманник',
-           skillDesc:'Крадёт 3-8 золота', skillType:'steal'},
-  mage:   {name:'Маг', emoji:'🧙', hp:20, atk:7, def:1, skill:'Огненный шар',
-           skillDesc:'Урон 12, тратит 5 HP', skillType:'fireball'}
-};
-
-const ENEMIES = {
-  wolf:      {name:'Волк', emoji:'🐺', hp:10, atk:3, def:1, gold:3, exp:8},
-  bandit:    {name:'Разбойник', emoji:'🗡️', hp:15, atk:4, def:1, gold:7, exp:12},
-  guard:     {name:'Стражник замка', emoji:'🛡️', hp:20, atk:6, def:3, gold:12, exp:20},
-  darkknight:{name:'Тёмный рыцарь', emoji:'⚔️', hp:30, atk:8, def:4, gold:20, exp:35},
-  morgana:   {name:'Моргана', emoji:'👑', hp:60, atk:10, def:4, gold:100, exp:100, boss:true}
-};
-
-const SHOP_ITEMS = [
-  {id:'potion',  name:'🧪 Зелье лечения (+10 HP)', price:5,  type:'potion'},
-  {id:'bigpotion',name:'🧪 Большое зелье (+20 HP)', price:9,  type:'bigpotion'},
-  {id:'sword',   name:'⚔️ Стальной меч (+3 атака)', price:15, type:'weapon', atk:3},
-  {id:'armor',   name:'🛡️ Кольчуга (+3 защита)',   price:15, type:'armor', def:3},
-  {id:'amulet',  name:'🧿 Оберег (+2 защита)',     price:10, type:'armor', def:2}
-];
-
-// ==================== СОСТОЯНИЕ ====================
-let G = {
-  player: null,
-  scene: 'start',
-  logLines: [],
-  inCombat: false,
-  enemy: null,
-  flags: {},
-  killed: 0
-};
-
-// ==================== СЛУЖЕБНЫЕ ====================
-function log(text, cls) {
-  G.logLines.push({text, cls: cls||''});
-  if (G.logLines.length > 200) G.logLines.shift();
-  renderLog();
-  const el = document.getElementById('log');
-  el.scrollTop = el.scrollHeight;
-}
-
-function renderLog() {
-  const el = document.getElementById('log');
-  el.innerHTML = G.logLines.map(l =>
-    `<p class="${l.cls}">${l.text}</p>`
-  ).join('');
-}
-
-function renderStats() {
-  const el = document.getElementById('stats');
-  if (!G.player) { el.innerHTML = '<span class="sys">Создание героя...</span>'; return; }
-  const p = G.player;
-  const hpPct = Math.max(0, Math.round(p.hp / p.maxHp * 100));
-  el.innerHTML = `
-    <div class="row">
-      <span class="item">${p.emoji} <b>${p.name}</b></span>
-      <span class="item">❤️ ${Math.max(0,p.hp)}/${p.maxHp}</span>
-      <span class="item">⚔️ ${p.atk}</span>
-      <span class="item">🛡️ ${p.def}</span>
-      <span class="item">🪙 ${p.gold}</span>
-      <span class="item">⭐ ${p.level} (${p.exp}/${p.expNext})</span>
+<canvas id="game"></canvas>
+<div id="ui">
+  <div class="top-bar">
+    <div class="resources">
+      <div class="res-item"><span class="res-icon">🪵</span> 0</div>
+      <div class="res-item"><span class="res-icon">🪨</span> 0</div>
+      <div class="res-item"><span class="res-icon">🍖</span> 0</div>
     </div>
-    <div class="hpbar"><div class="hpfill" style="width:${hpPct}%"></div></div>
-  `;
+  </div>
+  <div class="bottom-bar">
+    <div class="action-btn" onclick="alert('Меню строительства в разработке!')">🏗️</div>
+    <div class="action-btn" onclick="alert('Меню армии в разработке!')">⚔️</div>
+  </div>
+</div>
+
+<script>
+// ==========================================
+// НАСТРОЙКИ И БАЗОВЫЕ ПЕРЕМЕННЫЕ
+// ==========================================
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W = window.innerWidth;
+let H = window.innerHeight;
+let DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+// Параметры изометрии (Размер тайла)
+const TILE_W = 64;
+const TILE_H = 32;
+const MAP_SIZE = 30; // Карта 30x30
+
+// Состояние камеры
+const camera = {
+  x: 0,
+  y: 0,
+  zoom: 1,
+  minZoom: 0.5,
+  maxZoom: 2,
+  isDragging: false,
+  lastX: 0,
+  lastY: 0,
+  pinchDist: 0
+};
+
+// Инициализация карты
+let map = [];
+
+// ==========================================
+// ГЕНЕРАЦИЯ КАРТЫ
+// ==========================================
+function generateMap() {
+  map = [];
+  for (let y = 0; y < MAP_SIZE; y++) {
+    map[y] = [];
+    for (let x = 0; x < MAP_SIZE; x++) {
+      // Определяем центр и края для создания острова
+      const distFromCenter = Math.hypot(x - MAP_SIZE/2, y - MAP_SIZE/2);
+      let type = 'grass';
+      
+      if (distFromCenter > MAP_SIZE * 0.45) {
+        type = 'water'; // Вода по краям
+      } else if (Math.random() < 0.2) {
+        type = 'tree'; // Деревья на суше
+      } else if (Math.random() < 0.1) {
+        type = 'rock'; // Камни
+      }
+      
+      map[y][x] = { x, y, type, seed: Math.random() * 100 };
+    }
+  }
 }
 
-function setActions(buttons) {
-  const el = document.getElementById('actions');
-  el.innerHTML = '';
-  buttons.forEach(b => {
-    if (!b) return;
-    const btn = document.createElement('button');
-    btn.textContent = b.label;
-    if (b.cls) btn.className = b.cls;
-    if (b.disabled) btn.disabled = true;
-    btn.onclick = b.action;
-    el.appendChild(btn);
-  });
-}
-
-function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-
-// ==================== ИГРОК ====================
-function createPlayer(name, clsKey) {
-  const c = CLASSES[clsKey];
-  G.player = {
-    name: name || c.name,
-    cls: clsKey,
-    emoji: c.emoji,
-    hp: c.hp, maxHp: c.hp,
-    atk: c.atk, def: c.def,
-    gold: 10,
-    level: 1, exp: 0, expNext: 30,
-    inventory: {potion: 2},
-    skill: c.skill,
-    skillDesc: c.skillDesc,
-    skillType: c.skillType,
-    equipment: {}
+// ==========================================
+// ИЗОМЕТРИЧЕСКАЯ МАТЕМАТИКА
+// ==========================================
+// Преобразование координат карты в экранные координаты (до учета камеры)
+function getScreenPos(mapX, mapY) {
+  return {
+    x: (mapX - mapY) * (TILE_W / 2),
+    y: (mapX + mapY) * (TILE_H / 2)
   };
-  G.killed = 0;
-  G.flags = {};
-  saveGame();
-  log(`<span class="title">${c.emoji} ${G.player.name} — ${c.name}</span>`, '');
-  log(`Ты прибываешь в деревню Заречье. Впереди — приключения, сражения и древняя тьма.`, 'sys');
-  goVillage();
 }
 
-// ==================== ЛОКАЦИИ ====================
-function goVillage() {
-  G.scene = 'village';
-  setActions([
-    {label:'🏠 Таверна (отдых, 3 зол.)', action:() => tavern()},
-    {label:'🧺 Лавка Марло', action:() => shop()},
-    {label:'🌲 Лес (бой)', action:() => forest()},
-    {label:'🏰 Замок (бой, босс)', action:() => castle()},
-    {label:'📜 Квест: Зорька', action:() => questCow(), disabled: G.flags.cowDone},
-    {label:'💾 Сохранить', action:() => { saveGame(); log('Игра сохранена.', 'sys'); }},
-    {label:'🔄 Начать заново', action:() => { if(confirm('Удалить сохранение?')) { clearSave(); location.reload(); } }, cls:'danger full'}
-  ]);
-}
-
-function tavern() {
-  if (G.player.gold < 3) { log('Не хватает золота (нужно 3).', 'sys'); return goVillage(); }
-  G.player.gold -= 3;
-  G.player.hp = G.player.maxHp;
-  log('Ты отдыхаешь в таверне. Силы восстановлены. <span class="gold">−3 золота</span>.', '');
-  renderStats(); saveGame(); goVillage();
-}
-
-function shop() {
-  G.scene = 'shop';
-  log('🧺 <b>Лавка Марло.</b> «Заходи, герой. Есть всё, что нужно.»', 'title');
-  const buttons = SHOP_ITEMS.map(it => ({
-    label: `${it.name} — ${it.price}🪙`,
-    action: () => buyItem(it),
-    disabled: G.player.gold < it.price
-  }));
-  buttons.push({label:'🚪 Уйти', action:() => goVillage(), cls:'full'});
-  setActions(buttons);
-}
-
-function buyItem(it) {
-  if (G.player.gold < it.price) { log('Не хватает золота.', 'sys'); return; }
-  G.player.gold -= it.price;
-  if (it.type === 'potion' || it.type === 'bigpotion') {
-    G.player.inventory[it.type] = (G.player.inventory[it.type] || 0) + 1;
-    log(`Куплено: ${it.name}. <span class="gold">−${it.price}</span>`, '');
-  } else if (it.type === 'weapon') {
-    G.player.atk += it.atk;
-    log(`Куплено: ${it.name}. Атака +${it.atk}! <span class="gold">−${it.price}</span>`, 'heal');
-  } else if (it.type === 'armor') {
-    G.player.def += it.def;
-    log(`Куплено: ${it.name}. Защита +${it.def}! <span class="gold">−${it.price}</span>`, 'heal');
-  }
-  renderStats(); saveGame(); shop();
-}
-
-// ==================== БОЙ ====================
-function startCombat(enemyKey, onWin) {
-  const e = ENEMIES[enemyKey];
-  G.enemy = {
-    key: enemyKey, name: e.name, emoji: e.emoji,
-    hp: e.hp, maxHp: e.hp, atk: e.atk, def: e.def,
-    gold: e.gold, exp: e.exp, boss: e.boss
+// Преобразование экранных координат в координаты карты (для кликов)
+function getMapPos(screenX, screenY) {
+  const sx = screenX - W/2 - camera.x;
+  const sy = screenY - H/2 - camera.y;
+  return {
+    x: (sx / (TILE_W / 2) + sy / (TILE_H / 2)) / 2,
+    y: (sy / (TILE_H / 2) - sx / (TILE_W / 2)) / 2
   };
-  G.inCombat = true;
-  G.onWin = onWin;
-  G.player.blocking = false;
-  log(`<span class="boss">${e.emoji} ${e.name}</span> преграждает путь!`, '');
-  combatTurn();
 }
 
-function combatTurn() {
-  if (!G.inCombat) return;
-  const p = G.player, e = G.enemy;
-  renderStats();
-  setActions([
-    {label:'⚔️ Атаковать', action:() => playerAttack()},
-    {label:`✨ ${p.skill}`, action:() => playerSkill(), cls:'special'},
-    {label:`🧪 Зелье (${p.inventory.potion||0})`, action:() => usePotion('potion'), disabled:!(p.inventory.potion>0)},
-    {label:`🧪 Большое (${p.inventory.bigpotion||0})`, action:() => usePotion('bigpotion'), disabled:!(p.inventory.bigpotion>0)},
-    {label:'🏃 Бежать', action:() => flee(), cls:'danger full'}
-  ]);
-  if (e.boss) log(`<span class="boss">👑 ${e.name}: ❤️ ${e.hp}/${e.maxHp}</span>`, '');
-  else log(`${e.emoji} ${e.name}: ❤️ ${e.hp}/${e.maxHp}`, 'sys');
+// ==========================================
+// ВВОД (МЫШЬ И ТАЧ)
+// ==========================================
+function handleStart(x, y) {
+  camera.isDragging = true;
+  camera.lastX = x;
+  camera.lastY = y;
 }
-
-function playerAttack() {
-  const p = G.player, e = G.enemy;
-  const dmg = Math.max(1, p.atk - e.def + rand(-1, 2));
-  e.hp -= dmg;
-  log(`Ты бьёшь ${e.name}. <span class="dmg">−${dmg} HP</span>`, '');
-  if (e.hp <= 0) return winCombat();
-  enemyTurn();
-}
-
-function playerSkill() {
-  const p = G.player, e = G.enemy;
-  if (p.skillType === 'fireball') {
-    if (p.hp <= 5) { log('Слишком мало HP для огненного шара!', 'sys'); return combatTurn(); }
-    p.hp -= 5;
-    const dmg = 12 + rand(0,3);
-    e.hp -= dmg;
-    log(`🔥 Огненный шар! <span class="dmg">−${dmg} HP</span> (ты потерял 5 HP)`, '');
-    if (e.hp <= 0) return winCombat();
-    enemyTurn();
-  } else if (p.skillType === 'block') {
-    p.blocking = true;
-    log('🛡️ Ты поднимаешь щит веры. Следующий удар будет ослаблен.', 'heal');
-    enemyTurn();
-  } else if (p.skillType === 'steal') {
-    const stolen = rand(3, 8);
-    p.gold += stolen;
-    log(`🖐️ Карманник! Ты крадёшь <span class="gold">${stolen} золота</span> у ${e.name}.`, 'gold');
-    renderStats();
-    enemyTurn();
+function handleMove(x, y) {
+  if (camera.isDragging) {
+    const dx = x - camera.lastX;
+    const dy = y - camera.lastY;
+    camera.x += dx;
+    camera.y += dy;
+    camera.lastX = x;
+    camera.lastY = y;
   }
 }
-
-function usePotion(type) {
-  const p = G.player;
-  if (!p.inventory[type] || p.inventory[type] <= 0) return combatTurn();
-  p.inventory[type]--;
-  const heal = type === 'potion' ? 10 : 20;
-  p.hp = Math.min(p.maxHp, p.hp + heal);
-  log(`🧪 Ты выпиваешь зелье. <span class="heal">+${heal} HP</span>`, 'heal');
-  renderStats();
-  enemyTurn();
+function handleEnd() {
+  camera.isDragging = false;
 }
 
-function enemyTurn() {
-  const p = G.player, e = G.enemy;
-  if (!G.inCombat) return;
-  let dmg = Math.max(1, e.atk - p.def + rand(-1, 2));
-  if (p.blocking) { dmg = Math.floor(dmg / 3); p.blocking = false; log('🛡️ Щит веры поглощает большую часть удара!', 'heal'); }
-  p.hp -= dmg;
-  log(`${e.emoji} ${e.name} бьёт тебя. <span class="dmg">−${dmg} HP</span>`, '');
-  renderStats();
-  if (p.hp <= 0) return loseCombat();
-  combatTurn();
-}
+// Мышь
+canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
+canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+window.addEventListener('mouseup', handleEnd);
 
-function winCombat() {
-  const p = G.player, e = G.enemy;
-  log(`<span class="heal">🎉 Победа! ${e.name} повержен!</span>`, '');
-  p.gold += e.gold;
-  p.exp += e.exp;
-  log(`<span class="gold">+${e.gold} золота</span>, <span class="exp">+${e.exp} опыта</span>`, '');
-  G.inCombat = false;
-  G.killed++;
-  G.enemy = null;
-  // Level up
-  while (p.exp >= p.expNext) {
-    p.exp -= p.expNext;
-    p.level++;
-    p.expNext = Math.floor(p.expNext * 1.5);
-    p.maxHp += 4; p.hp = p.maxHp;
-    p.atk += 2; p.def += 1;
-    log(`<span class="title">⭐ УРОВЕНЬ ${p.level}! HP+4, Атака+2, Защита+1</span>`, '');
+// Колесико для зума на ПК
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+  camera.zoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.zoom + zoomDelta));
+}, { passive: false });
+
+// Тач (свайп и пинч)
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    handleStart(e.touches[0].clientX, e.touches[0].clientY);
+  } else if (e.touches.length === 2) {
+    camera.isDragging = false;
+    camera.pinchDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
   }
-  renderStats(); saveGame();
-  const cb = G.onWin;
-  G.onWin = null;
-  if (cb) setTimeout(cb, 200);
-  else setTimeout(goVillage, 200);
-}
+}, { passive: false });
 
-function loseCombat() {
-  const p = G.player;
-  G.inCombat = false;
-  log('<span class="dmg">💀 Ты пал в бою...</span>', '');
-  const loss = Math.min(p.gold, Math.floor(p.gold / 3));
-  p.gold -= loss;
-  p.hp = Math.floor(p.maxHp / 2);
-  log(`Тебя спасли крестьяне. Потеряно <span class="gold">${loss} золота</span>. HP восстановлено наполовину.`, 'sys');
-  G.enemy = null;
-  renderStats(); saveGame();
-  setTimeout(goVillage, 300);
-}
-
-function flee() {
-  if (G.enemy && G.enemy.boss) {
-    log('От Морганы не сбежать!', 'sys');
-    return enemyTurn();
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 1) {
+    handleMove(e.touches[0].clientX, e.touches[0].clientY);
+  } else if (e.touches.length === 2) {
+    const newDist = Math.hypot(
+      e.touches[0].clientX - e.touches[1].clientX,
+      e.touches[0].clientY - e.touches[1].clientY
+    );
+    const delta = newDist - camera.pinchDist;
+    camera.zoom = Math.max(camera.minZoom, Math.min(camera.maxZoom, camera.zoom + delta * 0.005));
+    camera.pinchDist = newDist;
   }
-  if (Math.random() < 0.6) {
-    log('Ты сбежал с поля боя.', 'sys');
-    G.inCombat = false; G.enemy = null;
-    setTimeout(goVillage, 200);
+}, { passive: false });
+
+canvas.addEventListener('touchend', handleEnd);
+
+// ==========================================
+// ОТРИСОВКА
+// ==========================================
+function drawTile(x, y) {
+  const t = map[y][x];
+  const pos = getScreenPos(x, y);
+  
+  ctx.save();
+  ctx.translate(pos.x, pos.y);
+
+  // Основание тайла (ромб)
+  ctx.beginPath();
+  ctx.moveTo(0, -TILE_H / 2);
+  ctx.lineTo(TILE_W / 2, 0);
+  ctx.lineTo(0, TILE_H / 2);
+  ctx.lineTo(-TILE_W / 2, 0);
+  ctx.closePath();
+
+  if (t.type === 'water') {
+    const wave = Math.sin(Date.now() / 500 + t.seed) * 5;
+    const grad = ctx.createLinearGradient(-TILE_W/2, -TILE_H/2, TILE_W/2, TILE_H/2);
+    grad.addColorStop(0, '#0ea5e9');
+    grad.addColorStop(1, '#0284c7');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    // Блик
+    ctx.fillStyle = `rgba(255,255,255,${0.1 + wave * 0.02})`;
+    ctx.beginPath();
+    ctx.moveTo(0, -TILE_H / 4 + wave);
+    ctx.lineTo(TILE_W / 4, 0 + wave);
+    ctx.lineTo(0, TILE_H / 4 + wave);
+    ctx.lineTo(-TILE_W / 4, 0 + wave);
+    ctx.fill();
   } else {
-    log('Сбежать не удалось!', 'sys');
-    enemyTurn();
+    // Трава
+    const grad = ctx.createLinearGradient(0, -TILE_H/2, 0, TILE_H/2);
+    grad.addColorStop(0, '#4ade80');
+    grad.addColorStop(1, '#22c55e');
+    ctx.fillStyle = grad;
+    ctx.fill();
+    
+    // Текстура травы
+    ctx.strokeStyle = 'rgba(0,0,0,0.05)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-TILE_W/4, -TILE_H/4); ctx.lineTo(0, 0);
+    ctx.moveTo(0, -TILE_H/2); ctx.lineTo(0, 0);
+    ctx.stroke();
+  }
+  
+  ctx.restore();
+
+  // Объекты на тайле
+  if (t.type === 'tree') {
+    const sway = Math.sin(Date.now() / 1000 + t.seed) * 2;
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    
+    // Тень
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI*2); ctx.fill();
+    
+    // Ствол
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-4, -25, 8, 25);
+    
+    // Крона
+    ctx.fillStyle = '#166534';
+    ctx.beginPath(); ctx.arc(sway, -35, 22, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#15803d';
+    ctx.beginPath(); ctx.arc(-5 + sway, -38, 15, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath(); ctx.arc(5 + sway, -40, 10, 0, Math.PI*2); ctx.fill();
+    
+    ctx.restore();
+  } else if (t.type === 'rock') {
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI*2); ctx.fill();
+    
+    ctx.fillStyle = '#64748b';
+    ctx.beginPath(); ctx.moveTo(-10, 5); ctx.lineTo(-5, -15); ctx.lineTo(10, -10); ctx.lineTo(15, 5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.beginPath(); ctx.moveTo(-5, -15); ctx.lineTo(10, -10); ctx.lineTo(0, -5); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
 }
 
-// ==================== ЛЕС ====================
-function forest() {
-  G.scene = 'forest';
-  log('🌲 Ты входишь в тёмный лес. Ветки шумят, где-то воет волк...', 'sys');
-  setActions([
-    {label:'🐺 Идти вглубь (волк)', action:() => startCombat('wolf', goVillage)},
-    {label:'🗡️ Найти разбойника', action:() => startCombat('bandit', goVillage)},
-    {label:'🚪 Вернуться в деревню', action:() => goVillage(), cls:'full'}
-  ]);
-}
+function draw() {
+  // Очистка экрана
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
 
-// ==================== КВЕСТ ====================
-function questCow() {
-  if (G.flags.cowDone) { log('Квест уже выполнен.', 'sys'); return goVillage(); }
-  log('📜 <b>Квест «Зорька»:</b> Тимка просит спасти корову. Разбойники в лесу.', 'title');
-  setActions([
-    {label:'⚔️ Сразиться с разбойником', action:() => startCombat('bandit', () => {
-      G.flags.cowDone = true;
-      const reward = 15;
-      G.player.gold += reward;
-      log(`🐄 Ты спас Зорьку! Мельничиха благодарит тебя. <span class="gold">+${reward} золота</span>`, 'heal');
-      renderStats(); saveGame(); goVillage();
-    })},
-    {label:'🚪 Позже', action:() => goVillage(), cls:'full'}
-  ]);
-}
+  ctx.save();
+  
+  // Применяем камеру (сдвиг и зум в центр экрана)
+  ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
+  ctx.scale(camera.zoom, camera.zoom);
 
-// ==================== ЗАМОК ====================
-function castle() {
-  G.scene = 'castle';
-  log('🏰 Ты у ворот Центрального замка. Стража смотрит настороженно.', 'sys');
-  const buttons = [
-    {label:'🛡️ Сразиться со стражником', action:() => startCombat('guard', goVillage)},
-    {label:'⚔️ Сразиться с тёмным рыцарем', action:() => startCombat('darkknight', goVillage)},
-    {label:'🚪 Уйти в деревню', action:() => goVillage(), cls:'full'}
-  ];
-  if (G.player.level >= 3) {
-    buttons.push({label:'👑 БОСС: Моргана', action:() => startCombat('morgana', () => {
-      log('<span class="title">🏆 ТЫ ПОБЕДИЛ МОРГАНУ! Древняя тьма изгнана, Альдория спасена!</span>', '');
-      log('Ты — легенда. Конец истории (пока что).', 'sys');
-      G.flags.won = true;
-      setActions([
-        {label:'🔄 Играть снова', action:() => { clearSave(); location.reload(); }, cls:'full'}
-      ]);
-    }), cls:'danger full'});
-  } else {
-    buttons.push({label:'👑 Босс (нужен 3 ур.)', action:() => log('Слишком слаб. Достигни 3 уровня.', 'sys'), disabled:true, cls:'danger full'});
+  // Сортировка тайлов для правильного перекрытия (по y + x)
+  // Рисуем сзади наперед
+  for (let sum = 0; sum < MAP_SIZE * 2; sum++) {
+    for (let x = 0; x < MAP_SIZE; x++) {
+      const y = sum - x;
+      if (y >= 0 && y < MAP_SIZE) {
+        // Простейшая отсечка (рисуем только то, что близко к экрану)
+        const pos = getScreenPos(x, y);
+        const screenX = pos.x * camera.zoom + camera.x + W/2;
+        const screenY = pos.y * camera.zoom + camera.y + H/2;
+        
+        if (screenX > -100 && screenX < W + 100 && screenY > -100 && screenY < H + 100) {
+          drawTile(x, y);
+        }
+      }
+    }
   }
-  setActions(buttons);
+
+  ctx.restore();
 }
 
-// ==================== СОХРАНЕНИЕ ====================
-function saveGame() {
-  try {
-    localStorage.setItem('aldoria_save', JSON.stringify({
-      player: G.player, flags: G.flags, killed: G.killed
-    }));
-  } catch(e) {}
-}
-function loadGame() {
-  try {
-    const raw = localStorage.getItem('aldoria_save');
-    if (!raw) return false;
-    const data = JSON.parse(raw);
-    if (!data.player) return false;
-    G.player = data.player;
-    G.flags = data.flags || {};
-    G.killed = data.killed || 0;
-    return true;
-  } catch(e) { return false; }
-}
-function clearSave() { try { localStorage.removeItem('aldoria_save'); } catch(e){} }
-
-// ==================== СТАРТ ====================
-function startScreen() {
-  G.player = null;
-  renderStats();
-  G.logLines = [];
-  log('<span class="title">⚔️ ХРОНИКИ АЛЬДОРИИ ⚔️</span>', '');
-  log('Тёмная сила пробудилась в Старой крепости. Деревня Заречье в опасности. Только ты можешь спасти королевство.', 'sys');
-
-  const buttons = [];
-  if (loadGame()) {
-    buttons.push({label:'📂 Продолжить', action:() => {
-      renderStats();
-      log(`С возвращением, <b>${G.player.name}</b>.`, 'title');
-      goVillage();
-    }, cls:'full'});
-  }
-  buttons.push({label:'🛡️ Рыцарь (HP30, Атк6, Защ5)', action:() => createPlayer('', 'knight'), cls:'full'});
-  buttons.push({label:'🗡️ Плут (HP22, Атк8, Защ2)', action:() => createPlayer('', 'rogue'), cls:'full'});
-  buttons.push({label:'🧙 Маг (HP20, Атк7, Защ1)', action:() => createPlayer('', 'mage'), cls:'full'});
-  setActions(buttons);
+// ==========================================
+// ИГРОВОЙ ЦИКЛ И ЗАПУСК
+// ==========================================
+function resize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width = W * DPR;
+  canvas.height = H * DPR;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(DPR, DPR);
 }
 
-startScreen();
+window.addEventListener('resize', resize);
+
+function loop() {
+  draw();
+  requestAnimationFrame(loop);
+}
+
+// Старт
+resize();
+generateMap();
+// Центрируем камеру
+const centerPos = getScreenPos(MAP_SIZE/2, MAP_SIZE/2);
+camera.x = -centerPos.x;
+camera.y = -centerPos.y;
+
+loop();
 </script>
 </body>
 </html>
