@@ -3,462 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#1a1a2e">
-<title>Isometric Survival</title>
-<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
-<script>window.vConsole = new window.VConsole();</script>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;font-family:system-ui,sans-serif}
-  html,body{width:100%;height:100%;overflow:hidden;background:#0f172a;touch-action:none}
-  #game{display:block;width:100%;height:100%}
-  
-  /* UI */
-  #ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;justify-content:space-between;padding:16px}
-  .top-bar{display:flex;justify-content:flex-start;pointer-events:auto}
-  .resources{display:flex;gap:12px;background:rgba(15,23,42,0.85);padding:8px 16px;border-radius:12px;border:2px solid #334155;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
-  .res-item{display:flex;align-items:center;gap:6px;color:#fff;font-weight:bold;font-size:15px;text-shadow:1px 1px 0 #000}
-  .res-icon{font-size:18px}
-  
-  .bottom-bar{display:flex;justify-content:center;gap:16px;pointer-events:auto;padding-bottom:24px}
-  .action-btn{width:64px;height:64px;border-radius:50%;background:rgba(30,41,59,0.9);border:2px solid #475569;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;box-shadow:0 4px 10px rgba(0,0,0,0.5);cursor:pointer;transition:transform 0.1s}
-  .action-btn:active{transform:scale(0.9);background:#334155}
-  .action-btn.active{border-color:#4ade80;background:#14532d}
-
-  /* Меню строительства */
-  #buildMenu{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:rgba(15,23,42,0.95);border:2px solid #475569;border-radius:16px;padding:16px;display:flex;gap:12px;opacity:0;pointer-events:none;transition:all 0.3s;z-index:10}
-  #buildMenu.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
-  .build-option{background:#1e293b;border:2px solid #334155;border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;cursor:pointer;color:#fff;min-width:85px}
-  .build-option:active{background:#334155}
-  .build-option .icon{font-size:32px;margin-bottom:4px}
-  .build-option .name{font-size:11px;font-weight:bold}
-  .build-option .cost{font-size:10px;color:#fbbf24;margin-top:4px}
-
-  /* Отмена строительства */
-  #cancelBuildBtn{position:fixed;top:16px;right:16px;background:rgba(239,68,68,0.9);color:#fff;padding:10px 16px;border-radius:8px;font-weight:bold;border:2px solid #b91c1c;display:none;cursor:pointer;z-index:20}
-  #cancelBuildBtn.show{display:block}
-
-  /* Плашка уведомления */
-  #toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:#fbbf24;color:#000;padding:8px 16px;border-radius:8px;font-weight:bold;opacity:0;transition:all 0.3s;pointer-events:none;z-index:100}
-  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-</style>
+<meta name="theme-color" content="#04060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<meta name="description" content="VOID FARMER — неоновый космический выживач-собиратель">
+<title>VOID FARMER</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<canvas id="game"></canvas>
+<div id="app">
+  <canvas id="game"></canvas>
 
-<div id="ui">
-  <div class="top-bar">
-    <div class="resources">
-      <div class="res-item"><span class="res-icon">🪵</span> <span id="uiWood">0</span></div>
-      <div class="res-item"><span class="res-icon">🪨</span> <span id="uiStone">0</span></div>
-      <div class="res-item"><span class="res-icon">🍖</span> <span id="uiFood">0</span></div>
+  <!-- HUD -->
+  <div id="hud" class="hud hidden">
+    <div class="hud-top">
+      <div class="panel stats">
+        <div class="hull">
+          <div class="hull-fill" id="hullFill"></div>
+          <span class="hull-label">HULL</span>
+          <span class="hull-text" id="hullText">100</span>
+        </div>
+        <div class="res-row" id="resRow"></div>
+      </div>
+      <div class="panel sector">
+        <div class="sector-name">СЕКТОР <span id="sectorNum">1</span></div>
+        <div class="sector-bar"><div id="sectorFill"></div></div>
+      </div>
+      <div class="panel combo" id="comboPanel">
+        <div class="combo-mult" id="comboMult">x1</div>
+        <div class="combo-bar"><div id="comboFill"></div></div>
+      </div>
+      <button id="pauseBtn" class="pause-btn" aria-label="Пауза">❚❚</button>
     </div>
   </div>
-  <div class="bottom-bar">
-    <div class="action-btn" id="btnBuild" onclick="toggleBuildMenu()">🏗️</div>
-    <div class="action-btn" onclick="showToast('Армия появится позже!')">⚔️</div>
+
+  <!-- Touch controls -->
+  <div id="stick" class="stick"><div id="stickKnob" class="stick-knob"></div></div>
+  <button id="dashBtn" class="dash-btn hidden">PULSE</button>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <!-- Menu -->
+  <div id="menu" class="screen">
+    <div class="menu-inner">
+      <h1 class="title">VOID<span>FARMER</span></h1>
+      <p class="subtitle">Дрон-собиратель · Бесконечный пояс астероидов</p>
+      <button id="playBtn" class="btn-primary">НАЧАТЬ ЗАБЕГ</button>
+      <div class="controls-hint">
+        <div><kbd>WASD</kbd> / <kbd>←↑↓→</kbd> — движение</div>
+        <div><kbd>SPACE</kbd> — импульс (рывок)</div>
+        <div><kbd>ESC</kbd> — пауза</div>
+        <div>На телефоне: левая часть — джойстик, справа — <b>PULSE</b></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game over -->
+  <div id="over" class="screen hidden">
+    <div class="menu-inner">
+      <h1 class="title small">ДРОН <span>ПОТЕРЯН</span></h1>
+      <div class="stats-grid">
+        <div><span>Сектор</span><b id="finalSector">1</b></div>
+        <div><span>Феррит</span><b id="finalRes0">0</b></div>
+        <div><span>Плазма</span><b id="finalRes1">0</b></div>
+        <div><span>Кристалл</span><b id="finalRes2">0</b></div>
+      </div>
+      <button id="againBtn" class="btn-primary">НОВЫЙ ЗАБЕГ</button>
+    </div>
+  </div>
+
+  <!-- Pause -->
+  <div id="pause" class="screen hidden">
+    <div class="menu-inner">
+      <h1 class="title small">ПАУЗА</h1>
+      <button id="resumeBtn" class="btn-primary">ПРОДОЛЖИТЬ</button>
+    </div>
   </div>
 </div>
-
-<div id="cancelBuildBtn" onclick="cancelBuild()">✖ Отменить</div>
-
-<div id="buildMenu">
-  <div class="build-option" onclick="selectBuild('townhall')">
-    <div class="icon">🏰</div>
-    <div class="name">Ратуша</div>
-    <div class="cost">🪵50 🪨20</div>
-  </div>
-  <div class="build-option" onclick="selectBuild('lumberjack')">
-    <div class="icon">🪓</div>
-    <div class="name">Лесопилка</div>
-    <div class="cost">🪵20</div>
-  </div>
-</div>
-
-<div id="toast">Текст</div>
-
-<script>
-// ==========================================
-// БАЗОВЫЕ НАСТРОЙКИ
-// ==========================================
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-let W = window.innerWidth, H = window.innerHeight;
-let DPR = Math.min(window.devicePixelRatio || 1, 2);
-
-const TILE_W = 64, TILE_H = 32, MAP_SIZE = 30;
-
-let resources = { wood: 100, stone: 50, food: 0 };
-let buildings = []; 
-let selectedBuild = null; 
-
-// Координаты мыши/пальца в экранном пространстве (для призрака)
-let mouseX = W/2, mouseY = H/2;
-let isDragging = false;
-let dragStartX = 0, dragStartY = 0;
-let lastX = 0, lastY = 0;
-let hasMoved = false;
-
-const camera = { x: 0, y: 0, zoom: 1, minZoom: 0.4, maxZoom: 2.5 };
-let map = [];
-
-const bgCanvas = document.createElement('canvas');
-const bgCtx = bgCanvas.getContext('2d');
-const OFFSET_X = MAP_SIZE * (TILE_W / 2);
-const OFFSET_Y = 200;
-
-const BUILDINGS = {
-  townhall: { name: 'Ратуша', cost: { wood: 50, stone: 20 }, size: 2, emoji: '🏰', color: '#fbbf24' },
-  lumberjack: { name: 'Лесопилка', cost: { wood: 20, stone: 0 }, size: 1, emoji: '🪓', color: '#a16207' }
-};
-
-// ==========================================
-// ГЕНЕРАЦИЯ И PRE-RENDERING
-// ==========================================
-function generateMap() {
-  map = [];
-  for (let y = 0; y < MAP_SIZE; y++) {
-    map[y] = [];
-    for (let x = 0; x < MAP_SIZE; x++) {
-      const distFromCenter = Math.hypot(x - MAP_SIZE/2, y - MAP_SIZE/2);
-      let type = 'grass';
-      if (distFromCenter > MAP_SIZE * 0.45) type = 'water';
-      else if (Math.random() < 0.15) type = 'tree';
-      else if (Math.random() < 0.08) type = 'rock';
-      
-      map[y][x] = { x, y, type, seed: Math.random() * 100 };
-    }
-  }
-}
-
-function renderTerrain() {
-  bgCanvas.width = MAP_SIZE * TILE_W;
-  bgCanvas.height = MAP_SIZE * TILE_H + 400;
-  
-  bgCtx.setTransform(1, 0, 0, 1, 0, 0);
-  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-  bgCtx.translate(bgCanvas.width / 2, OFFSET_Y);
-
-  for (let y = 0; y < MAP_SIZE; y++) {
-    for (let x = 0; x < MAP_SIZE; x++) {
-      const t = map[y][x];
-      const pos = getScreenPos(x, y);
-      
-      bgCtx.save();
-      bgCtx.translate(pos.x, pos.y);
-
-      bgCtx.beginPath();
-      bgCtx.moveTo(0, -TILE_H / 2);
-      bgCtx.lineTo(TILE_W / 2, 0);
-      bgCtx.lineTo(0, TILE_H / 2);
-      bgCtx.lineTo(-TILE_W / 2, 0);
-      bgCtx.closePath();
-
-      // Рисуем ТОЛЬКО базовую землю и воду. Деревья рисуются динамически!
-      if (t.type === 'water') {
-        const grad = bgCtx.createLinearGradient(0, -TILE_H/2, 0, TILE_H/2);
-        grad.addColorStop(0, '#0ea5e9'); grad.addColorStop(1, '#0284c7');
-        bgCtx.fillStyle = grad; bgCtx.fill();
-      } else {
-        const grad = bgCtx.createLinearGradient(0, -TILE_H/2, 0, TILE_H/2);
-        grad.addColorStop(0, '#4ade80'); grad.addColorStop(1, '#22c55e');
-        bgCtx.fillStyle = grad; bgCtx.fill();
-        bgCtx.strokeStyle = 'rgba(0,0,0,0.05)';
-        bgCtx.beginPath(); bgCtx.moveTo(0, -TILE_H/2); bgCtx.lineTo(0, 0); bgCtx.stroke();
-      }
-      bgCtx.restore();
-    }
-  }
-}
-
-// ==========================================
-// ИЗОМЕТРИЯ
-// ==========================================
-function getScreenPos(mapX, mapY) {
-  return {
-    x: (mapX - mapY) * (TILE_W / 2),
-    y: (mapX + mapY) * (TILE_H / 2)
-  };
-}
-
-function getMapPos(screenX, screenY) {
-  const sx = screenX - W/2 - camera.x;
-  const sy = screenY - H/2 - camera.y;
-  return {
-    x: (sx / (TILE_W / 2) + sy / (TILE_H / 2)) / 2,
-    y: (sy / (TILE_H / 2) - sx / (TILE_W / 2)) / 2
-  };
-}
-
-// ==========================================
-// ВВОД
-// ==========================================
-function handleStart(x, y) {
-  isDragging = true; hasMoved = false;
-  dragStartX = x; dragStartY = y; lastX = x; lastY = y;
-  mouseX = x; mouseY = y;
-}
-
-function handleMove(x, y) {
-  mouseX = x; mouseY = y;
-  if (!isDragging) return;
-  
-  if (Math.hypot(x - dragStartX, y - dragStartY) > 10) hasMoved = true;
-
-  if (hasMoved) {
-    camera.x += (x - lastX);
-    camera.y += (y - lastY);
-  }
-  lastX = x; lastY = y;
-}
-
-function handleEnd(x, y) {
-  isDragging = false;
-  if (!hasMoved) handleClick(x, y);
-}
-
-function handleClick(screenX, screenY) {
-  const p = getMapPos(screenX, screenY);
-  const gx = Math.round(p.x);
-  const gy = Math.round(p.y);
-
-  if (gx >= 0 && gx < MAP_SIZE && gy >= 0 && gy < MAP_SIZE) {
-    const tile = map[gy][gx];
-
-    if (selectedBuild) {
-      if (isValidPlacement(gx, gy, selectedBuild)) {
-        placeBuilding(gx, gy, selectedBuild);
-      } else {
-        showToast('Здесь нельзя строить!');
-      }
-      return;
-    }
-
-    if (tile.type === 'tree') {
-      tile.type = 'grass';
-      resources.wood += 10; updateUI();
-      showToast('+10 🪵');
-    } else if (tile.type === 'rock') {
-      tile.type = 'grass';
-      resources.stone += 5; updateUI();
-      showToast('+5 🪨');
-    }
-  }
-}
-
-canvas.addEventListener('mousedown', e => handleStart(e.clientX, e.clientY));
-canvas.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
-window.addEventListener('mouseup', e => handleEnd(e.clientX, e.clientY));
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  camera.zoom = clamp(camera.zoom + (e.deltaY > 0 ? -0.1 : 0.1), camera.minZoom, camera.maxZoom);
-}, { passive: false });
-
-canvas.addEventListener('touchstart', e => {
-  e.preventDefault();
-  if (e.touches.length === 1) handleStart(e.touches[0].clientX, e.touches[0].clientY);
-  else if (e.touches.length === 2) {
-    isDragging = false;
-    camera.pinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (e.touches.length === 1 && isDragging) handleMove(e.touches[0].clientX, e.touches[0].clientY);
-  else if (e.touches.length === 2) {
-    const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-    camera.zoom = clamp(camera.zoom + (newDist - camera.pinchDist) * 0.005, camera.minZoom, camera.maxZoom);
-    camera.pinchDist = newDist;
-  }
-}, { passive: false });
-
-canvas.addEventListener('touchend', e => {
-  if (isDragging && e.changedTouches.length === 1) handleEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
-  isDragging = false;
-});
-
-// ==========================================
-// СТРОИТЕЛЬСТВО
-// ==========================================
-function toggleBuildMenu() {
-  document.getElementById('buildMenu').classList.toggle('show');
-  document.getElementById('btnBuild').classList.toggle('active');
-}
-
-function selectBuild(type) {
-  selectedBuild = type;
-  toggleBuildMenu();
-  document.getElementById('cancelBuildBtn').classList.add('show');
-  showToast('Тапни по карте для постройки');
-}
-
-function cancelBuild() {
-  selectedBuild = null;
-  document.getElementById('cancelBuildBtn').classList.remove('show');
-}
-
-function isValidPlacement(x, y, type) {
-  const b = BUILDINGS[type];
-  if (resources.wood < b.cost.wood || resources.stone < b.cost.stone) return false;
-
-  for (let dy = 0; dy < b.size; dy++) {
-    for (let dx = 0; dx < b.size; dx++) {
-      const tx = x + dx, ty = y + dy;
-      if (tx < 0 || tx >= MAP_SIZE || ty < 0 || ty >= MAP_SIZE) return false;
-      if (map[ty][tx].type !== 'grass') return false;
-      for (const existing of buildings) {
-        if (tx >= existing.x && tx < existing.x + existing.size &&
-            ty >= existing.y && ty < existing.y + existing.size) return false;
-      }
-    }
-  }
-  return true;
-}
-
-function placeBuilding(x, y, type) {
-  const b = BUILDINGS[type];
-  resources.wood -= b.cost.wood; resources.stone -= b.cost.stone;
-  buildings.push({ x, y, type, size: b.size, color: b.color, emoji: b.emoji });
-  cancelBuild();
-  updateUI();
-  showToast(`${b.name} построена!`);
-}
-
-// ==========================================
-// ОТРИСОВКА ИГРОВЫХ ОБЪЕКТОВ
-// ==========================================
-function drawTree(x, y, seed) {
-  const pos = getScreenPos(x, y);
-  const sway = Math.sin(Date.now() / 800 + seed) * 2;
-  
-  ctx.save();
-  ctx.translate(pos.x, pos.y);
-  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#78350f'; ctx.fillRect(-4, -25, 8, 25);
-  ctx.fillStyle = '#166534'; ctx.beginPath(); ctx.arc(sway, -35, 22, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#15803d'; ctx.beginPath(); ctx.arc(-5 + sway, -38, 15, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#22c55e'; ctx.beginPath(); ctx.arc(5 + sway, -40, 10, 0, Math.PI*2); ctx.fill();
-  ctx.restore();
-}
-
-function drawRock(x, y) {
-  const pos = getScreenPos(x, y);
-  ctx.save();
-  ctx.translate(pos.x, pos.y);
-  ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.beginPath(); ctx.ellipse(0, 0, 15, 8, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#64748b'; ctx.beginPath(); ctx.moveTo(-10, 5); ctx.lineTo(-5, -15); ctx.lineTo(10, -10); ctx.lineTo(15, 5); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#94a3b8'; ctx.beginPath(); ctx.moveTo(-5, -15); ctx.lineTo(10, -10); ctx.lineTo(0, -5); ctx.closePath(); ctx.fill();
-  ctx.restore();
-}
-
-function drawBuilding(b, isGhost = false, isValid = true) {
-  const pos = getScreenPos(b.x, b.y);
-  const bw = TILE_W * b.size * 0.8;
-  const bh = TILE_H * b.size * 0.8;
-
-  ctx.save();
-  ctx.translate(pos.x, pos.y);
-  if (isGhost) ctx.globalAlpha = 0.6;
-
-  ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.beginPath(); ctx.ellipse(TILE_W/4, TILE_H/4, bw/2, bh/2, 0, 0, Math.PI*2); ctx.fill();
-
-  if (isGhost) {
-    ctx.fillStyle = isValid ? '#4ade80' : '#ef4444';
-    ctx.fillRect(-bw/2, -bw/2, bw, bw);
-  } else {
-    ctx.fillStyle = b.color; ctx.fillRect(-bw/2, -bw/2, bw, bw);
-    ctx.fillStyle = '#78350f';
-    ctx.beginPath(); ctx.moveTo(-bw/2, -bw/2); ctx.lineTo(0, -bw); ctx.lineTo(bw/2, -bw/2); ctx.fill();
-  }
-
-  ctx.font = '32px Arial'; ctx.textAlign = 'center';
-  ctx.fillText(b.emoji, 0, -10);
-  ctx.restore();
-}
-
-// ==========================================
-// ГЛАВНЫЙ ЦИКЛ ОТРИСОВКИ
-// ==========================================
-function draw() {
-  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, W, H);
-
-  ctx.save();
-  ctx.translate(W / 2 + camera.x, H / 2 + camera.y);
-  ctx.scale(camera.zoom, camera.zoom);
-
-  // 1. Земля
-  ctx.drawImage(bgCanvas, -bgCanvas.width / 2, -OFFSET_Y);
-
-  // 2. Собираем ВСЕ объекты для правильной сортировки по Y
-  const renderList = [];
-  
-  // Оптимизация: рисуем только то, что близко к камере
-  const pTopLeft = getMapPos(0, 0);
-  const pBotRight = getMapPos(W, H);
-  const minX = Math.max(0, Math.floor(pTopLeft.x) - 3);
-  const maxX = Math.min(MAP_SIZE, Math.ceil(pBotRight.x) + 3);
-  const minY = Math.max(0, Math.floor(pTopLeft.y) - 3);
-  const maxY = Math.min(MAP_SIZE, Math.ceil(pBotRight.y) + 3);
-
-  for (let y = minY; y < maxY; y++) {
-    for (let x = minX; x < maxX; x++) {
-      const t = map[y][x];
-      if (t.type === 'tree') renderList.push({ sortY: y, draw: () => drawTree(x, y, t.seed) });
-      else if (t.type === 'rock') renderList.push({ sortY: y, draw: () => drawRock(x, y) });
-    }
-  }
-
-  for (const b of buildings) {
-    renderList.push({ sortY: b.y + b.size - 1, draw: () => drawBuilding(b) });
-  }
-
-  // Призрак здания
-  if (selectedBuild) {
-    const p = getMapPos(mouseX, mouseY);
-    const gx = Math.round(p.x), gy = Math.round(p.y);
-    if (gx >= 0 && gx < MAP_SIZE && gy >= 0 && gy < MAP_SIZE) {
-      const valid = isValidPlacement(gx, gy, selectedBuild);
-      const bDef = BUILDINGS[selectedBuild];
-      renderList.push({ sortY: gy + bDef.size - 1 + 0.1, draw: () => drawBuilding({x: gx, y: gy, size: bDef.size, emoji: bDef.emoji, color: '#fff'}, true, valid) });
-    }
-  }
-
-  // Сортировка по нижнему краю (глубина)
-  renderList.sort((a, b) => a.sortY - b.sortY);
-  for (const item of renderList) item.draw();
-
-  ctx.restore();
-}
-
-const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-function updateUI() {
-  document.getElementById('uiWood').textContent = resources.wood;
-  document.getElementById('uiStone').textContent = resources.stone;
-  document.getElementById('uiFood').textContent = resources.food;
-}
-
-let toastTimeout;
-function showToast(text) {
-  const t = document.getElementById('toast'); t.textContent = text; t.classList.add('show');
-  clearTimeout(toastTimeout); toastTimeout = setTimeout(() => t.classList.remove('show'), 2000);
-}
-
-function resize() {
-  W = window.innerWidth; H = window.innerHeight;
-  canvas.width = W * DPR; canvas.height = H * DPR;
-  canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
-  ctx.scale(DPR, DPR);
-}
-
-window.addEventListener('resize', resize);
-
-function loop() { draw(); requestAnimationFrame(loop); }
-
-// СТАРТ
-resize(); generateMap(); renderTerrain(); updateUI();
-const startPos = getScreenPos(MAP_SIZE/2, MAP_SIZE/2);
-camera.x = -startPos.x; camera.y = -startPos.y - 100;
-loop();
-</script>
+<script src="game.js"></script>
 </body>
 </html>
