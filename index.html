@@ -1,88 +1,276 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#04060f">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="format-detection" content="telephone=no">
-<meta name="description" content="VOID FARMER — неоновый космический выживач-собиратель">
-<title>VOID FARMER</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dota Runner: Wards & Items</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #2c2c2c; /* Темный фон для контраста */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+        canvas {
+            background-color: #f4f4f4;
+            border-bottom: 4px solid #333;
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
 </head>
 <body>
-<div id="app">
-  <canvas id="game"></canvas>
 
-  <!-- HUD -->
-  <div id="hud" class="hud hidden">
-    <div class="hud-top">
-      <div class="panel stats">
-        <div class="hull">
-          <div class="hull-fill" id="hullFill"></div>
-          <span class="hull-label">HULL</span>
-          <span class="hull-text" id="hullText">100</span>
-        </div>
-        <div class="res-row" id="resRow"></div>
-      </div>
-      <div class="panel sector">
-        <div class="sector-name">СЕКТОР <span id="sectorNum">1</span></div>
-        <div class="sector-bar"><div id="sectorFill"></div></div>
-      </div>
-      <div class="panel combo" id="comboPanel">
-        <div class="combo-mult" id="comboMult">x1</div>
-        <div class="combo-bar"><div id="comboFill"></div></div>
-      </div>
-      <button id="pauseBtn" class="pause-btn" aria-label="Пауза">❚❚</button>
-    </div>
-  </div>
+<canvas id="gameCanvas" width="800" height="400"></canvas>
 
-  <!-- Touch controls -->
-  <div id="stick" class="stick"><div id="stickKnob" class="stick-knob"></div></div>
-  <button id="dashBtn" class="dash-btn hidden">PULSE</button>
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-  <!-- Toast -->
-  <div id="toast" class="toast"></div>
+    // Игровые переменные
+    let score = 0;
+    let gameOver = false;
+    let frameCount = 0;
+    
+    // Настройки персонажа (Lion)
+    const player = {
+        x: 100,
+        y: 320, 
+        width: 40,
+        height: 60,
+        dy: 0, 
+        gravity: 0.6,
+        jumpForce: -12,
+        isGrounded: true,
+        color: '#8e44ad' // Фиолетовый цвет для Лайона
+    };
 
-  <!-- Menu -->
-  <div id="menu" class="screen">
-    <div class="menu-inner">
-      <h1 class="title">VOID<span>FARMER</span></h1>
-      <p class="subtitle">Дрон-собиратель · Бесконечный пояс астероидов</p>
-      <button id="playBtn" class="btn-primary">НАЧАТЬ ЗАБЕГ</button>
-      <div class="controls-hint">
-        <div><kbd>WASD</kbd> / <kbd>←↑↓→</kbd> — движение</div>
-        <div><kbd>SPACE</kbd> — импульс (рывок)</div>
-        <div><kbd>ESC</kbd> — пауза</div>
-        <div>На телефоне: левая часть — джойстик, справа — <b>PULSE</b></div>
-      </div>
-    </div>
-  </div>
+    // Массивы для препятствий и предметов
+    let obstacles = [];
+    let items = [];
 
-  <!-- Game over -->
-  <div id="over" class="screen hidden">
-    <div class="menu-inner">
-      <h1 class="title small">ДРОН <span>ПОТЕРЯН</span></h1>
-      <div class="stats-grid">
-        <div><span>Сектор</span><b id="finalSector">1</b></div>
-        <div><span>Феррит</span><b id="finalRes0">0</b></div>
-        <div><span>Плазма</span><b id="finalRes1">0</b></div>
-        <div><span>Кристалл</span><b id="finalRes2">0</b></div>
-      </div>
-      <button id="againBtn" class="btn-primary">НОВЫЙ ЗАБЕГ</button>
-    </div>
-  </div>
+    // Настройки спавна
+    let spawnTimer = 0;
+    let spawnInterval = 90; 
 
-  <!-- Pause -->
-  <div id="pause" class="screen hidden">
-    <div class="menu-inner">
-      <h1 class="title small">ПАУЗА</h1>
-      <button id="resumeBtn" class="btn-primary">ПРОДОЛЖИТЬ</button>
-    </div>
-  </div>
-</div>
-<script src="game.js"></script>
+    // Список предметов
+    const dotaItems = ['ward', 'force', 'glimmer'];
+
+    // Обработка управления
+    function jump() {
+        if (player.isGrounded && !gameOver) {
+            player.dy = player.jumpForce;
+            player.isGrounded = false;
+        } else if (gameOver) {
+            resetGame();
+        }
+    }
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' || e.code === 'ArrowUp') {
+            e.preventDefault();
+            jump();
+        }
+    });
+    
+    window.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        jump();
+    });
+
+    window.addEventListener('mousedown', (e) => {
+        jump();
+    });
+
+    function resetGame() {
+        score = 0;
+        gameOver = false;
+        obstacles = [];
+        items = [];
+        player.y = 320;
+        player.dy = 0;
+        spawnTimer = 0;
+    }
+
+    function update() {
+        if (gameOver) return;
+
+        if (frameCount % 6 === 0) score += 1;
+        frameCount++;
+
+        // Физика прыжка
+        player.y += player.dy;
+        player.dy += player.gravity;
+
+        if (player.y > 320) {
+            player.y = 320;
+            player.dy = 0;
+            player.isGrounded = true;
+        }
+
+        // Логика спавна
+        spawnTimer++;
+        if (spawnTimer > spawnInterval) {
+            // 60% шанс препятствия, 40% шанс предмета
+            const isObstacle = Math.random() > 0.4; 
+            
+            if (isObstacle) {
+                obstacles.push({
+                    x: canvas.width,
+                    y: 340,
+                    width: 50,
+                    height: 40,
+                    color: '#d35400' // Цвет крипа
+                });
+            } else {
+                // Выбираем случайный предмет из списка
+                const randomType = dotaItems[Math.floor(Math.random() * dotaItems.length)];
+                items.push({
+                    x: canvas.width,
+                    y: 280, // Предметы висят в воздухе, чтобы их нужно было ловить
+                    width: 40,
+                    height: 40,
+                    type: randomType,
+                    bobbing: 0 // Для анимации парения
+                });
+            }
+            
+            spawnTimer = 0;
+            spawnInterval = Math.floor(Math.random() * 50) + 70; 
+        }
+
+        // Движение и коллизии препятствий
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let obs = obstacles[i];
+            obs.x -= 7; // Скорость игры
+
+            if (
+                player.x < obs.x + obs.width &&
+                player.x + player.width > obs.x &&
+                player.y < obs.y + obs.height &&
+                player.y + player.height > obs.y
+            ) {
+                gameOver = true; 
+            }
+
+            if (obs.x + obs.width < 0) obstacles.splice(i, 1);
+        }
+
+        // Движение и сбор предметов
+        for (let i = items.length - 1; i >= 0; i--) {
+            let item = items[i];
+            item.x -= 7;
+            item.bobbing += 0.1; // Анимация покачивания
+
+            // Коллизия с предметом
+            if (
+                player.x < item.x + item.width &&
+                player.x + player.width > item.x &&
+                player.y < item.y + item.height &&
+                player.y + player.height > item.y
+            ) {
+                // Бонусы за разные предметы
+                if (item.type === 'ward') score += 50;
+                if (item.type === 'force') score += 150;
+                if (item.type === 'glimmer') score += 100;
+                
+                items.splice(i, 1);
+                continue;
+            }
+
+            if (item.x + item.width < 0) items.splice(i, 1);
+        }
+    }
+
+    function draw() {
+        // Очистка
+        ctx.fillStyle = '#f4f4f4';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Земля (пунктирная линия)
+        ctx.fillStyle = '#333';
+        for(let i=0; i<canvas.width; i+=40) {
+            ctx.fillRect(i, 380, 20, 4);
+        }
+
+        // Отрисовка персонажа
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        // Глаз Лайона
+        ctx.fillStyle = 'white';
+        ctx.fillRect(player.x + 25, player.y + 10, 10, 10);
+        ctx.fillStyle = 'black';
+        ctx.fillRect(player.x + 28, player.y + 13, 4, 4);
+
+        // Отрисовка препятствий (Крипы)
+        obstacles.forEach(obs => {
+            ctx.fillStyle = obs.color;
+            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            // Глаз крипа
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(obs.x + 35, obs.y + 15, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(obs.x + 38, obs.y + 15, 3, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Отрисовка предметов (Эмодзи)
+        items.forEach(item => {
+            // Вычисляем высоту с учетом парения
+            let floatY = item.y + Math.sin(item.bobbing) * 10;
+            
+            ctx.font = '35px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            if (item.type === 'ward') {
+                ctx.fillText('👁️', item.x + item.width/2, floatY + item.height/2);
+            } else if (item.type === 'force') {
+                ctx.fillText('🪄', item.x + item.width/2, floatY + item.height/2);
+            } else if (item.type === 'glimmer') {
+                ctx.fillText('🧥', item.x + item.width/2, floatY + item.height/2);
+            }
+        });
+
+        // Интерфейс (Счет)
+        ctx.fillStyle = '#333';
+        ctx.font = 'bold 24px "Courier New", monospace';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillText('СЧЕТ: ' + String(score).padStart(5, '0'), 20, 40);
+
+        // Экран Game Over
+        if (gameOver) {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = '#e74c3c';
+            ctx.font = 'bold 40px "Courier New", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('ВЫ ПОЙМАНЫ КРИПОМ!', canvas.width / 2, canvas.height / 2 - 20);
+            
+            ctx.fillStyle = 'white';
+            ctx.font = '20px "Courier New", monospace';
+            ctx.fillText('Нажмите Пробел или Тапните для рестарта', canvas.width / 2, canvas.height / 2 + 30);
+        }
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+</script>
 </body>
 </html>
